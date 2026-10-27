@@ -1,0 +1,20 @@
+{
+  "name": "wasp-buddy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node start-local.mjs",
+    "build": "node build.mjs",
+    "check": "node --check public/mobile.js && node --check public/sw.js && node --check server.mjs && node --check build.mjs && node --check vision.mjs && node --check start-local.mjs && node --check api/scan.mjs && node --check api/status.mjs && node --check public/runtime-config.js",
+    "test": "npm run build && node --test tests/vision.test.mjs && node tests/smoke.cjs",
+    "build:pages": "node build.mjs --pages",
+    "test:pages": "npm run build:pages && node tests/pages.cjs"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

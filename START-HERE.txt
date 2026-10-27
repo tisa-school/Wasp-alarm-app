@@ -1,0 +1,30 @@
+WASP BUDDY — RUN ON YOUR COMPUTER
+
+1. Unzip the whole folder.
+2. Install Node.js 20.11 or newer if it is not already installed.
+3. Windows: double-click start-local.cmd.
+   Mac: open start-local.command (you may need Open from the right-click menu).
+   Linux / Terminal: run node start-local.mjs in this folder.
+4. Your browser opens Wasp Buddy. Keep the terminal window open.
+5. Tap Turn camera on, then Allow in the browser permission prompt.
+   Or use the Use phone camera button to take/choose a real photo.
+
+CAMERA PROBLEMS
+Use the address printed by the launcher on the same computer that runs it.
+The camera only starts after you tap the camera button.
+If permission was denied, use your browser's site settings to allow the camera.
+Close other apps that may be using the camera.
+The phone-camera chooser can offer a camera on phones or a file picker on computers.
+This download does not start a server on your phone or on your computer by itself.
+
+REAL PHOTO CHECKS
+The camera is real. Taking a photo does not mean it has been analysed.
+Automatic recognition needs an OpenAI image-recognition service key set as
+WASP_VISION_API_KEY in the server environment before starting the app.
+No key is included. Do not paste keys into chat or into frontend files.
+An adult must allow photo uploads in Grown-ups before using Scan.
+Scan sends one photo to the image service over the internet. No photos are saved
+by this app. It is NOT an offline insect-recognition model.
+
+It can miss wasps, cannot measure one metre, and cannot confirm an area is safe.
+Practice buttons are separated under Grown-ups and never produce real detections.
