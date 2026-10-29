@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Wasp Buddy",
+  "short_name": "Buzz",
+  "description": "A friendly safety practice app. No insect detection.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffe8a4",
+  "theme_color": "#ffe8a4",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
