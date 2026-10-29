@@ -14,13 +14,13 @@ A mobile-friendly camera app for children and their grown-ups, with on-device in
 
 ## What recognition means
 
-SCAN runs Google Coral's MobileNet V2 iNaturalist insect classifier using MediaPipe on this device. No recognition API key, paid service, or photo upload is needed in the default app. The model has 1,021 insect-species classes and a background class. It includes common wasps, hornets, and bees; it is not a general object detector or a trained proximity alarm.
-
-**It can miss or misidentify wasps. It cannot measure one metre, continuously monitor the surroundings, or confirm that an area is safe. Do not use it as a child-safety alarm.** Give insects space and stay with your child. Ask a grown-up for a clear photo; do not approach an insect to photograph it.
-
-The classifier is closed-set: unfamiliar objects can receive confident insect labels. Non-bee/wasp results therefore stay uncertain; they never mean “all clear”. Scores are uncalibrated model outputs, not probabilities of safety. App thresholds and genus grouping are conservative heuristics, not validated detection accuracy.
-
-During development, a small fixed sample check identified 2 of 3 natural wasp photos and both bee photos; one wasp remained uncertain. A cat and a dragonfly also returned uncertainty. These examples verify real inference and its limitations, not real-world accuracy. Additional pinned-specimen wasp photos also remained uncertain. Physical-phone testing is still needed.
+The local model only distinguishes insect species. It can confidently mistake a
+person or another unfamiliar object for a wasp. Its scores do not verify that an
+insect is present. Local scans therefore return “I’m not sure” and do not trigger
+wasp/bee alerts. Species inference remains available internally, but automatic
+alerts need an independently validated insect-presence detector before they can
+be enabled again. This is a mitigation, not a working person detector or a
+proximity alarm. No one-metre distance or all-clear claim is supported.
 
 ## Sound and camera
 

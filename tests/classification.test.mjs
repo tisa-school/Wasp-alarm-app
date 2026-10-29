@@ -17,3 +17,13 @@ test('Bee flies, mantidflies, and other classes are never called wasps based on 
 test('Missing, invalid, or weak scores never produce an all-clear result',()=>{
   for(const predictions of [[],[{label:'Vespula vulgaris',score:.2}],[{label:'Vespula vulgaris',score:NaN}],[{label:'Vespula vulgaris',score:2}]])assert.equal(summarize(predictions).verdict,'uncertain');
 });
+
+ test('Unverified photos cannot trigger an insect alert even with a confident species guess',async()=>{
+  const {unverifiedPhotoResult}=await import('../public/insect-classifier.mjs');
+  for(const label of ['Vespula vulgaris','Apis mellifera']){
+    const result=unverifiedPhotoResult([{label,score:1}]);
+    assert.equal(result.verdict,'uncertain');
+    assert.equal(result.distanceAvailable,false);
+    assert.equal(result.label,undefined);
+  }
+});

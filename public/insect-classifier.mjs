@@ -50,5 +50,14 @@ export async function classifyPhoto(photo,{signal,onProgress}={}) {
   onProgress?.('Looking at this photo…');
   const output=engine.classifier.classify(image);
   const predictions=(output.classifications[0]?.categories||[]).map(category=>({label:engine.labels[category.index]||'',score:category.score}));
-  return summarizePredictions(predictions);
+  // This closed-set model cannot establish that the subject is an insect.
+  // Its softmax scores are relative insect-species scores, not evidence of
+  // insect presence. Never turn these unverified candidates into an alert.
+  return unverifiedPhotoResult(predictions);
+}
+
+export function unverifiedPhotoResult(predictions) {
+  // Keep species scoring separate for future independently verified inputs.
+  // Raising a score threshold cannot reject out-of-distribution portraits.
+  return {verdict:'uncertain',scope:'single_photo',distanceAvailable:false};
 }
