@@ -1,0 +1,213 @@
+[
+  {
+    "name": "vercel-react-best-practices",
+    "source": "https://github.com/vercel-labs/agent-skills/tree/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62/skills/react-best-practices",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+    "path": "skills/react-best-practices",
+    "patches": [],
+    "files": 77
+  },
+  {
+    "name": "vercel-composition-patterns",
+    "source": "https://github.com/vercel-labs/agent-skills/tree/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62/skills/composition-patterns",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+    "path": "skills/composition-patterns",
+    "patches": [],
+    "files": 15
+  },
+  {
+    "name": "web-design-guidelines",
+    "source": "https://github.com/vercel-labs/agent-skills/tree/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62/skills/web-design-guidelines",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+    "path": "skills/web-design-guidelines",
+    "patches": [],
+    "files": 1
+  },
+  {
+    "name": "frontend-design",
+    "source": "https://github.com/anthropics/skills/tree/ca45fc496a3436251f191354091d557da31c15b5/skills/frontend-design",
+    "repository": "https://github.com/anthropics/skills",
+    "commit": "ca45fc496a3436251f191354091d557da31c15b5",
+    "path": "skills/frontend-design",
+    "patches": [],
+    "files": 2
+  },
+  {
+    "name": "accessibility",
+    "source": "https://github.com/addyosmani/web-quality-skills/tree/afa8da942115f2961fdbfa80807ea0b232ff6c00/skills/accessibility",
+    "repository": "https://github.com/addyosmani/web-quality-skills",
+    "commit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
+    "path": "skills/accessibility",
+    "patches": [],
+    "files": 5
+  },
+  {
+    "name": "seo",
+    "source": "https://github.com/addyosmani/web-quality-skills/tree/afa8da942115f2961fdbfa80807ea0b232ff6c00/skills/seo",
+    "repository": "https://github.com/addyosmani/web-quality-skills",
+    "commit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
+    "path": "skills/seo",
+    "patches": [],
+    "files": 4
+  },
+  {
+    "name": "supabase-postgres-best-practices",
+    "source": "https://github.com/supabase/agent-skills/tree/c9be0e931b7930f7d02126d04774d904c381e7d7/skills/supabase-postgres-best-practices",
+    "repository": "https://github.com/supabase/agent-skills",
+    "commit": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+    "path": "skills/supabase-postgres-best-practices",
+    "patches": [],
+    "files": 38
+  },
+  {
+    "name": "expo-overview",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-overview",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-overview",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 6
+  },
+  {
+    "name": "expo-project-structure",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-project-structure",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-project-structure",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 4
+  },
+  {
+    "name": "expo-router",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-router",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-router",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 11
+  },
+  {
+    "name": "expo-native-ui",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-native-ui",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-native-ui",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 12
+  },
+  {
+    "name": "expo-ui",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-ui",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-ui",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 11
+  },
+  {
+    "name": "expo-animation",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-animation",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-animation",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 5
+  },
+  {
+    "name": "expo-data-fetching",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-data-fetching",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-data-fetching",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 7
+  },
+  {
+    "name": "expo-module",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-module",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-module",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 11
+  },
+  {
+    "name": "expo-upgrade",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/expo-upgrade",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/expo-upgrade",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 12
+  },
+  {
+    "name": "eas-app-stores",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/eas-app-stores",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/eas-app-stores",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 11
+  },
+  {
+    "name": "eas-workflows",
+    "source": "https://github.com/expo/skills/tree/05754e71d02abe0d2d7a2fb5259ccac41f5ea59c/plugins/expo/skills/eas-workflows",
+    "repository": "https://github.com/expo/skills",
+    "commit": "05754e71d02abe0d2d7a2fb5259ccac41f5ea59c",
+    "path": "plugins/expo/skills/eas-workflows",
+    "patches": [
+      "Removed automatic upstream feedback submission; external reporting requires explicit user instruction."
+    ],
+    "files": 7
+  },
+  {
+    "name": "react-native-best-practices",
+    "source": "https://github.com/callstackincubator/agent-skills/tree/59e9d17446a248b21d86f078fcd0bd2d36db1ca4/skills/react-native-best-practices",
+    "repository": "https://github.com/callstackincubator/agent-skills",
+    "commit": "59e9d17446a248b21d86f078fcd0bd2d36db1ca4",
+    "path": "skills/react-native-best-practices",
+    "patches": [],
+    "files": 48
+  },
+  {
+    "name": "react-native-testing",
+    "source": "https://github.com/callstack/react-native-testing-library/tree/0ecb9c9c0cef163e01abdeae1b4b7c82af40d0b1/skills/react-native-testing",
+    "repository": "https://github.com/callstack/react-native-testing-library",
+    "commit": "0ecb9c9c0cef163e01abdeae1b4b7c82af40d0b1",
+    "path": "skills/react-native-testing",
+    "patches": [],
+    "files": 6
+  },
+  {
+    "name": "frontend-testing-debugging",
+    "source": "https://github.com/openai/plugins/tree/0722921d5542fc593105c27bd52630babd8b8c2a/plugins/build-web-apps/skills/frontend-testing-debugging",
+    "repository": "https://github.com/openai/plugins",
+    "commit": "0722921d5542fc593105c27bd52630babd8b8c2a",
+    "path": "plugins/build-web-apps/skills/frontend-testing-debugging",
+    "patches": [],
+    "files": 3
+  }
+]
