@@ -1,30 +1,24 @@
 WASP BUDDY — RUN ON YOUR COMPUTER
 
-1. Unzip the whole folder.
+1. Unzip the whole prepared local-app folder.
 2. Install Node.js 20.11 or newer if it is not already installed.
-3. Windows: double-click start-local.cmd.
-   Mac: open start-local.command (you may need Open from the right-click menu).
+3. Windows: open start-local.cmd.
+   Mac: open start-local.command (use Open from its right-click menu if needed).
    Linux / Terminal: run node start-local.mjs in this folder.
-4. Your browser opens Wasp Buddy. Keep the terminal window open.
-5. Tap Turn camera on, then Allow in the browser permission prompt.
-   Or use the Use phone camera button to take/choose a real photo.
+4. Keep the terminal window open while using the app.
+5. Open camera → Use device camera → Allow.
+6. Choose a photo opens existing files. It is not the live-camera button.
+7. Tap SCAN to check one image. Photos are analysed on this device.
+8. Grown-ups → Test sound plays a chime and requests Buzz's voice.
 
-CAMERA PROBLEMS
-Use the address printed by the launcher on the same computer that runs it.
-The camera only starts after you tap the camera button.
-If permission was denied, use your browser's site settings to allow the camera.
-Close other apps that may be using the camera.
-The phone-camera chooser can offer a camera on phones or a file picker on computers.
-This download does not start a server on your phone or on your computer by itself.
+The prepared ZIP includes the model and runtime. From a Git source checkout,
+run npm ci and npm run build before starting the app.
 
-REAL PHOTO CHECKS
-The camera is real. Taking a photo does not mean it has been analysed.
-Automatic recognition needs an OpenAI image-recognition service key set as
-WASP_VISION_API_KEY in the server environment before starting the app.
-No key is included. Do not paste keys into chat or into frontend files.
-An adult must allow photo uploads in Grown-ups before using Scan.
-Scan sends one photo to the image service over the internet. No photos are saved
-by this app. It is NOT an offline insect-recognition model.
+No recognition key or paid service is needed in the default app.
+It may get a photo wrong, miss a wasp, and cannot measure one metre.
+It cannot tell whether an area is safe. Keep a grown-up nearby.
+The separate practice buttons under Grown-ups are always pretend.
 
-It can miss wasps, cannot measure one metre, and cannot confirm an area is safe.
-Practice buttons are separated under Grown-ups and never produce real detections.
+If the camera was denied, allow it in your browser's site settings.
+If sound is silent, check device volume, silent mode, and browser sound settings.
+Running the server in a remote workspace does not start it on your own computer.

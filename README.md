@@ -1,77 +1,78 @@
 # Wasp Buddy
 
-A mobile-friendly camera app with large controls, a friendly Buzz character, photo-check integration, spoken guidance, and separately labelled practice screens.
+[Open the app](https://tisa-school.github.io/Wasp-alarm-app/)
 
-## Open on GitHub
+A mobile-friendly camera app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, a sound test, and separately labelled practice screens.
 
-The repository includes `.github/workflows/pages.yml` to publish the camera app with GitHub Pages.
+## Use it
 
-1. Open this repository on GitHub → **Settings → Pages**.
-2. Choose **GitHub Actions** as the build source.
-3. Under **Actions**, run **Open Wasp Buddy on GitHub Pages**, or push to `main`.
-4. When deployment finishes, use the website link in the workflow's deployment environment.
+1. Open camera → **Use device camera** (or **Turn camera on**). Allow camera access. This opens a webcam on a computer or the device camera on a phone. Stop camera releases it.
+2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
+3. Tap **SCAN** to check one captured frame or selected photo. The first scan downloads about 18 MB of model/runtime assets from this same website. Subsequent scans reuse them, including offline after a completed first download.
+4. Possible wasp and bee matches show an alert and sound when enabled. Other or weak results say **I'm not sure**. Keep a grown-up nearby.
+5. The speaker button mutes/unmutes sound; unmuting plays a confirmation chime. **Grown-ups → Test sound** plays three notes and requests Buzz's voice. Check device volume, silent mode, and browser sound settings if silent.
 
-The Pages build uses `npm run build:pages` and supports the repository subpath. It enables real camera preview and photo capture with browser permission on HTTPS. GitHub Pages cannot run the image-recognition server: the app explicitly displays camera-only mode and never uploads photos or invents a recognition result. Use the Node or Vercel server version to enable photo checks. Never put a recognition key in GitHub Pages JavaScript.
+## What recognition means
+
+SCAN runs Google Coral's MobileNet V2 iNaturalist insect classifier using MediaPipe on this device. No recognition API key, paid service, or photo upload is needed in the default app. The model has 1,021 insect-species classes and a background class. It includes common wasps, hornets, and bees; it is not a general object detector or a trained proximity alarm.
+
+**It can miss or misidentify wasps. It cannot measure one metre, continuously monitor the surroundings, or confirm that an area is safe. Do not use it as a child-safety alarm.** Give insects space and stay with your child. Ask a grown-up for a clear photo; do not approach an insect to photograph it.
+
+The classifier is closed-set: unfamiliar objects can receive confident insect labels. Non-bee/wasp results therefore stay uncertain; they never mean “all clear”. Scores are uncalibrated model outputs, not probabilities of safety. App thresholds and genus grouping are conservative heuristics, not validated detection accuracy.
+
+During development, a small fixed sample check identified 2 of 3 natural wasp photos and both bee photos; one wasp remained uncertain. A cat and a dragonfly also returned uncertainty. These examples verify real inference and its limitations, not real-world accuracy. Additional pinned-specimen wasp photos also remained uncertain. Physical-phone testing is still needed.
+
+## Sound and camera
+
+The real-camera button uses `getUserMedia` after a tap. Live video requires HTTPS or localhost, permission, and an available camera. Open the app directly in a browser rather than an embedded web preview. If permission was denied, change it in the browser's site settings. Image selection remains available when the camera is unavailable.
+
+Audio is initialized during a button tap before asynchronous photo analysis. Muting stops active tones and speech, and the preference persists. Speech depends on the device/browser's available English voices; the chime does not require speech synthesis. A silent output device cannot be diagnosed remotely. Automated tests measure generated Web Audio signals, not physical speaker output.
+
+## Privacy
+
+Default photo recognition stays on the device. Camera frames and selected photos are not uploaded, recorded, or included in history. The camera stops on leaving its screen or hiding the app. Only up to 20 result labels/timestamps and preferences are kept in local storage, which can be cleared. The website downloads the model and runtime when first needed. The service worker caches assets, never camera images or API responses.
+
+Optional voice questions require grown-up opt-in and use the browser's speech service, which may send audio to its provider. Buzz answers a fixed set of safety topics, not unrestricted AI questions. Picture questions work without microphone access. No analytics or external fonts are loaded.
 
 ## Run locally
 
-Requires Node.js 20.11 or newer. No production dependencies or npm installation are needed to start the app.
-
-- **Windows:** double-click `start-local.cmd`.
-- **macOS:** open `start-local.command`; if needed, use Open from its right-click menu.
-- **Linux or any terminal:** run `node start-local.mjs` in this folder.
-
-The launcher binds to your computer's loopback interface, opens the browser, and keeps running until Ctrl+C. `PORT` changes the default port 3000. Pass `--no-open` to start without opening a browser. The app is intended to run in a browser on that same computer. Running this in a remote cloud workspace does not start a server on your own phone or computer.
-
-Tap **Open camera**, then **Turn camera on**, and allow camera access. The live preview uses the actual browser camera API. **Use phone camera** opens the device camera/photo chooser where supported; a computer usually offers a file picker. This also provides a fallback when live camera access is blocked. Camera capture itself requires no recognition key.
-
-Live video needs HTTPS or localhost, browser permission, and an available camera. Opening a web preview inside another page can block camera access. Open the app directly in Safari, Chrome, Firefox, or Edge. If permission was previously denied, allow it in the browser's site settings. An HTTP LAN address usually cannot use live video; this local launcher does not serve HTTPS to phones.
-
-## Real photo checks
-
-SCAN captures one JPEG from the live camera or uses the chosen photo. With grown-up permission, it sends that photo to this app's backend, which calls the OpenAI image model. The provider key stays on the server.
-
-Set **WASP_VISION_API_KEY** in the server's environment before starting it. An existing `OPENAI_API_KEY` binding is also supported. Optional `WASP_VISION_MODEL` selects a compatible model; the default is `gpt-4.1-mini`. No key is included. Enter credentials through secure environment settings, not chat or frontend source. Restart the server after configuring its environment.
-
-In the app, an adult must enable photo uploads under **Grown-ups**. Each explicit Scan sends just one photo. Results are **Possible wasp**, **Not spotted**, or **I'm not sure**. Poor image quality forces uncertainty. Missing credentials, offline operation, provider failure, and invalid replies produce an error; they never produce a simulated detection or an “all clear”. The key is absent in the current development environment, so live recognition accuracy has not been validated.
-
-**Recognition can miss wasps or identify them incorrectly. It cannot measure one metre, continuously monitor the surroundings, or confirm that an area is safe. Keep supervising children.** The model examines a single snapshot; a nearby insect outside the frame, a tiny insect, or motion blur can be missed. This is not a validated child-safety detector.
-
-The camera and server run locally; recognition currently uses an online service. No offline wasp model is bundled. Provider use may incur charges. The app has bounded requests and in-memory limits (six per minute per connection address and 100 per hour per process). For public hosting, use deployment access protection and durable authenticated rate limits; serverless instances do not share counters.
-
-## Downloads and offline use
-
-`npm run build` produces:
-
-- `dist/Wasp-Buddy.html`: a self-contained browser file with the camera UI, picture questions, and practice screens. Photo recognition needs the hosted backend, so a standalone downloaded file cannot analyse images. Some mobile file viewers do not run HTML scripts.
-- `dist/web/`: static web assets, including the manifest and offline service worker. A backend is still required for real photo checks.
-
-The hosted UI works offline after its first complete load. Photo scans always require the online backend and are never cached or replayed. The app can be added to the phone home screen from Safari's Share menu or Chrome's Install/Add to Home Screen menu when hosted on HTTPS. This is a web app, not a native Android/iOS package.
-
-## Optional Vercel hosting
-
-`vercel.json` configures the build and static output; `api/scan.mjs` and `api/status.mjs` provide Node functions. Use the repository root as the Vercel project root, set **WASP_VISION_API_KEY** in Vercel's Environment Variables, and redeploy. Cloud development-environment secrets are separate from Vercel secrets. No Vercel deployment has been performed or inspected in this task. Publishing a Codex environment does not deploy the website.
-
-## Privacy and accessibility
-
-Camera preview and chosen photos stay on this device until Scan is tapped with adult consent. This app does not save photos to disk or history. Images are sent to OpenAI only for a requested photo check; provider data policies apply. Avoid including faces or personal information. The camera stops when leaving the camera screen or hiding the app. Only result labels and timestamps (up to 20) are stored locally and can be cleared.
-
-Voice questions require separate adult opt-in and use the browser's speech service, which may send audio to its provider. Picture questions and device speech playback remain available without microphone access. Buzz responds to a small fixed set of topics, not unrestricted AI chat. No analytics or external fonts are loaded. Buttons have large touch targets, labelled controls, keyboard focus, and reduced-motion support.
-
-## Development checks
+Requires Node.js 20.11 or newer:
 
 ```sh
 npm ci
-npm run check
-npm test
+npm run build
+npm start
 ```
 
-The browser checks need Playwright Chromium (`npx playwright install chromium`), or use an existing installation:
+The launcher opens the local browser on port 3000; `PORT` overrides it. It binds to loopback on the same computer. Pass `--no-open` to `node start-local.mjs` for internal validation. An HTTP LAN address usually cannot use a phone camera; this launcher does not serve HTTPS to other devices.
+
+The prepared local ZIP includes browser runtime assets. Windows can launch `start-local.cmd`; macOS can launch `start-local.command`. Keep the terminal window open. A single downloaded HTML file supports the basic UI and practice screens but cannot load the recognition runtime from a file origin; use the website or local server for recognition.
+
+## Build and deploy
 
 ```sh
-CHROMIUM_PATH=/usr/bin/chromium npm test
+npm run build:pages
+npm run deploy:pages
 ```
 
-Backend checks verify image restrictions, absent credentials, structured provider handling, uncertainty for poor images, same-origin requests, consent, and request limits. Browser checks cover Buzz, sound, consent, camera streams with a simulated device, permission denial, photo capture/selection, actual JPEG upload, result rendering with a stubbed provider, persistence, phone layouts, offline UI, and honest scan failure.
+`build` and `build:pages` copy the pinned MediaPipe runtime from npm dependencies, verify model SHA-256 hashes, and generate `dist/web/`. Scripts and styles receive content-versioned URLs to avoid stale mobile caches. `dist/Wasp-Buddy.html` is the basic standalone browser file.
 
-The cloud browser blocks file navigation, so the standalone bundle check loads its exact bytes into a blank offline document. Physical-phone camera capture, real-model accuracy, and Vercel deployment remain unverified. Tests do not call the paid provider.
+GitHub Pages currently publishes the **gh-pages** branch at its root. `deploy:pages` builds and pushes a new static publishing commit using an alternate Git index, preserving the source checkout and deployment history. Commit source changes first. It requires Git write access and never force-pushes. The main-branch workflow checks the app; it does not change repository Pages settings or publish over the branch deployment.
+
+Vercel can also serve `dist/web/` using the included configuration. No public Vercel deployment was performed here. Publishing a cloud development environment is separate from deploying this website.
+
+The optional older server recognizer remains available via `/api/scan`. To deliberately use it, configure `recognition: 'server'` in runtime-config and set `WASP_VISION_API_KEY` securely on the server (or reuse an existing `OPENAI_API_KEY`). That mode sends photos to OpenAI only after separate adult photo-upload consent and explicit Scan. It is not used by the default app and has no configured key here. Public server deployments require access protection and durable authenticated rate limits.
+
+## Validation and model sources
+
+```sh
+npm run check
+CHROMIUM_PATH=/usr/bin/chromium npm test
+CHROMIUM_PATH=/usr/bin/chromium npm run test:pages
+```
+
+Install Playwright Chromium if no local browser is available (`npx playwright install chromium`). Tests need curl for one-time downloads of pinned public image fixtures. Fixtures are SHA-256 checked in `.test-fixtures/`, ignored by Git, and never copied to the website. Fixture source URLs and hashes are in `tests/model-fixtures.json`; wasp/bee sample images are from johnSMUpark/bees, and neutral fixtures are from Google Coral.
+
+Unit/backend checks cover class grouping, uncertainty, image restrictions, missing credentials, provider failure, consent, origin checks, and request limits. Browser checks cover both camera controls, actual generated audio and mute behavior, real model inference on fixed photographs, offline inference, and honest failure without fake results. The server-provider tests use a stub; the on-device model tests execute the real model.
+
+See `public/THIRD-PARTY.md` and `public/models/provenance.json` for the unmodified model's pinned source, license, and hashes. Dependencies have lockfile integrity checks. Do not disable hash or TLS verification to work around an installation failure.

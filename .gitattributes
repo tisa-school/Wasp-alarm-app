@@ -1,0 +1,3 @@
+public/models/*.tflite binary
+# Keep the upstream license byte-for-byte, including its trailing blank line.
+public/models/LICENSE.txt -whitespace

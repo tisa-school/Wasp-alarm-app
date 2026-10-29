@@ -8,8 +8,9 @@ server.on('error',error=>{console.error(error.code==='EADDRINUSE'?'Port is in us
 server.listen(port,'127.0.0.1',()=>{
   const address=`http://localhost:${port}`;
   console.log(`Wasp Buddy is running at ${address}`);
-  console.log('Click Turn camera on or Use phone camera. Allow camera access in your browser.');
-  console.log(visionConfigured()?'A photo recognition key is configured. Scan needs an internet connection.':'Photo recognition is not connected. Camera capture works; Scan will report unavailable.');
+  console.log('Click Use device camera and allow access, or use Choose a photo for existing images.');
+  console.log('Default photo recognition runs on this device. No API key required.');
+  if(visionConfigured())console.log('A key is also available for the optional server recognition mode.');
   console.log('Keep this window open. Press Ctrl+C to stop.');
   if(process.argv.includes('--no-open'))return;
   const command=process.platform==='win32'?'cmd':process.platform==='darwin'?'open':'xdg-open';

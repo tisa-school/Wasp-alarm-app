@@ -10,7 +10,7 @@ const server = spawn(process.execPath,['server.mjs'],{cwd:root,env:{...process.e
 let browser;
 let checks = 0;
 async function check(label,work){await work();checks++;console.log(`PASS ${label}`);}
-async function choosePhoto(page){const pending=page.waitForEvent('filechooser');await page.locator('#take-photo').click();await(await pending).setFiles(path.join(root,'public/icon-192.png'));}
+async function choosePhoto(page){const pending=page.waitForEvent('filechooser');await page.locator('#choose-photo').click();await(await pending).setFiles(path.join(root,'public/icon-192.png'));}
 (async()=>{
   for(let i=0;i<50;i++){
     try{const response=await fetch(base);if(response.ok)break;}catch{}
@@ -19,6 +19,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
   }
   browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {}),args:['--no-sandbox','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
   let context=await browser.newContext({viewport:{width:390,height:844},permissions:['camera']});
+  await context.addInitScript(()=>{window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};});
   let page=await context.newPage();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
@@ -37,7 +38,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     assert.equal(await page.locator('#voice-consent').isChecked(),false);await page.locator('#parent-done').click();
   });
   await check('Live camera starts and releases its tracks on navigation',async()=>{
-    await page.locator('#practice').click();await page.locator('#enable-camera').click();
+    await page.locator('#practice').click();await page.locator('#take-photo').click();
     await page.waitForFunction(()=>document.querySelector('#camera').srcObject?.getVideoTracks()[0]?.readyState==='live');
     await page.evaluate(()=>window.testTrack=document.querySelector('#camera').srcObject.getVideoTracks()[0]);
     await page.locator('#home').click();assert.equal(await page.evaluate(()=>window.testTrack.readyState),'ended');
@@ -64,10 +65,11 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
   });
   await check('Camera denial keeps practice usable',async()=>{
     await page.addInitScript(()=>Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>{throw new DOMException('Denied','NotAllowedError');}}));
-    await page.reload();await page.locator('#practice').click();await page.locator('#enable-camera').click();
+    await page.reload();await page.locator('#practice').click();await page.locator('#take-photo').click();
     await page.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('permission was not given'));
     assert.equal(await page.locator('#take-photo').isVisible(),true);
-    assert.equal(await page.locator('#photo-file').getAttribute('capture'),'environment');
+    assert.equal(await page.locator('#photo-file').getAttribute('capture'),null);
+    assert.equal(await page.locator('#choose-photo').isVisible(),true);
     await page.locator('#check').click();assert.match(await page.locator('#camera-status').textContent(),/First turn on/);
   });
   await check('Installed web assets work offline after caching',async()=>{
@@ -87,7 +89,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await file.locator('#grownups').click();await file.locator('#practice-alert').click();assert.equal(await file.locator('#result-screen').isVisible(),true);
     assert.equal(requests.length,0);await local.close();
   });
-  await check('Phone camera photo picker produces a real JPEG for Scan',async()=>{
+  await check('Choose a photo opens the file picker and produces a JPEG for Scan',async()=>{
     await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page);
     await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
@@ -103,6 +105,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     // Offline service-worker behavior is exercised separately above.
     await context.close();
     context=await browser.newContext({serviceWorkers:'block',permissions:['camera'],viewport:{width:390,height:844}});
+    await context.addInitScript(()=>{window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};});
     page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
     await page.locator('#grownups').click();await page.locator('#photo-consent').check();await page.locator('#parent-done').click();
     let uploads=0;

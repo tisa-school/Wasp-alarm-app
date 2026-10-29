@@ -1,0 +1,30 @@
+{
+  "natural-wasps-1.jpg": {
+    "source": "https://raw.githubusercontent.com/johnSMUpark/bees/93dda4039b9ad24e03f30cd4ab0422f1ff758820/wasps/10060338395_bac28dcb97_n.jpg",
+    "sha256": "a6f2156be0421b026d0a8d05afdaa270addbe08fb82d4389ed529d777fed6b05"
+  },
+  "natural-wasps-2.jpg": {
+    "source": "https://raw.githubusercontent.com/johnSMUpark/bees/93dda4039b9ad24e03f30cd4ab0422f1ff758820/wasps/10197944_f5b996b422_m.jpg",
+    "sha256": "88bd530a7b16b3f44a9d0e0563177983ba969660c5e6a10e4c2dd67b65772e31"
+  },
+  "natural-wasps-3.jpg": {
+    "source": "https://raw.githubusercontent.com/johnSMUpark/bees/93dda4039b9ad24e03f30cd4ab0422f1ff758820/wasps/10513403096_731fb27b8a_n.jpg",
+    "sha256": "2d5932ea58f4781d5024c47c32cac85180d74304f2b617a17f84dcf1f12d48bc"
+  },
+  "natural-bees-1.jpg": {
+    "source": "https://raw.githubusercontent.com/johnSMUpark/bees/93dda4039b9ad24e03f30cd4ab0422f1ff758820/bees/10166485783_9cd6706c72_n.jpg",
+    "sha256": "1a3f3f56f8b43fffced9de4249f006d0a6b19ea71939c5dbe95689d1b08a5c15"
+  },
+  "natural-bees-2.jpg": {
+    "source": "https://raw.githubusercontent.com/johnSMUpark/bees/93dda4039b9ad24e03f30cd4ab0422f1ff758820/bees/10392500084_4b1ef7ffac_n.jpg",
+    "sha256": "722ddd0118bd679a066c27c0d222e662709de25bbe18bb89cbaba81d410185e1"
+  },
+  "dragonfly.bmp": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/dragonfly.bmp",
+    "sha256": "bb42efbdd3ef1a06cc17cc4db862373be91d74eec2fcdeeb6665247a3ae6ce52"
+  },
+  "cat.bmp": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/cat.bmp",
+    "sha256": "34f235786382686111728287fd26d4c24dd8c25de8233469d6eeb301888ce0a9"
+  }
+}

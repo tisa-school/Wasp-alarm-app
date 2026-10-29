@@ -1,0 +1,17 @@
+{
+  "insects.tflite": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/mobilenet_v2_1.0_224_inat_insect_quant.tflite",
+    "sha256": "0ebaeb474dccf56b8b818b014f0d6a8e22b35a45b491a659f0b5405c9c838282",
+    "bytes": 3655867
+  },
+  "labels.txt": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/inat_insect_labels.txt",
+    "sha256": "e5e03664a8a70eafc3308268eb8cd6aa28652912735bfdd45e436ae9617155bc",
+    "bytes": 40317
+  },
+  "LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/LICENSE",
+    "sha256": "f9946796a8a5bd5981565142fa42e3b0cc36aef6f80e86beaf5905b3c0fef1b5",
+    "bytes": 11361
+  }
+}

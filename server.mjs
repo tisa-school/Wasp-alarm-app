@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectPhoto, visionConfigured, validPhoto, VisionError } from './vision.mjs';
 const root = path.join(import.meta.dirname,'public');
-const types = {'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.png':'image/png'};
+const types = {'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.png':'image/png','.jpg':'image/jpeg','.mjs':'text/javascript','.wasm':'application/wasm','.txt':'text/plain','.json':'application/json'};
 function json(res,status,body) {
   if(res.destroyed)return;
   res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
