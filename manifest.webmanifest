@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Wasp Buddy",
   "short_name": "Buzz",
-  "description": "A friendly safety practice app. No insect detection.",
+  "description": "On-device insect photo checks and safety practice. Not a safety detector.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
