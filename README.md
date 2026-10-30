@@ -2,7 +2,7 @@
 
 [Open the app](https://tisa-school.github.io/Wasp-alarm-app/)
 
-A mobile-friendly camera app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, a sound test, and separately labelled practice screens.
+A mobile-friendly, camera-first app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, and a sound test. It opens directly on the real camera screen; there are no pretend alert or game screens.
 
 ## Use it
 
@@ -46,7 +46,7 @@ npm start
 
 The launcher opens the local browser on port 3000; `PORT` overrides it. It binds to loopback on the same computer. Pass `--no-open` to `node start-local.mjs` for internal validation. An HTTP LAN address usually cannot use a phone camera; this launcher does not serve HTTPS to other devices.
 
-The prepared local ZIP includes browser runtime assets. Windows can launch `start-local.cmd`; macOS can launch `start-local.command`. Keep the terminal window open. A single downloaded HTML file supports the basic UI and practice screens but cannot load the recognition runtime from a file origin; use the website or local server for recognition.
+The prepared local ZIP includes browser runtime assets. Windows can launch `start-local.cmd`; macOS can launch `start-local.command`. Keep the terminal window open. A single downloaded HTML file supports the basic camera UI but cannot load the recognition runtime from a file origin; use the website or local server for recognition.
 
 ## Build and deploy
 

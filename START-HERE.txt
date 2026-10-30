@@ -17,7 +17,7 @@ run npm ci and npm run build before starting the app.
 No recognition key or paid service is needed in the default app.
 It may get a photo wrong, miss a wasp, and cannot measure one metre.
 It cannot tell whether an area is safe. Keep a grown-up nearby.
-The separate practice buttons under Grown-ups are always pretend.
+The app opens directly on the real camera screen. There are no pretend alert buttons.
 
 If the camera was denied, allow it in your browser's site settings.
 If sound is silent, check device volume, silent mode, and browser sound settings.

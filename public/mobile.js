@@ -9,7 +9,7 @@
   const sounds = new window.BuzzSound();
   let stream;
   let recognition;
-  let screen = 'buzz';
+  let screen = 'camera';
   let cameraPending = false;
   let cameraGeneration = 0;
   let installPrompt;
@@ -51,7 +51,7 @@
     $('#camera-placeholder').hidden = false;
     $('#enable-camera').disabled = false;
     $('#take-photo').disabled = false;
-    $('#take-photo').textContent = '📷 Use device camera';
+    $('#take-photo').textContent = '📷 Start camera';
     cameraPending = false;
   }
   function show(next) {
@@ -86,7 +86,7 @@
     speak('Hello! I am Buzz. Stay calm, and tell your grown-up.');
     $('#sound-status').textContent=started ? 'Listen for three notes and Buzz’s voice. If silent, check device volume, silent mode, and browser sound settings.' : 'This browser could not start sound. Check its sound permissions and try again.';
   });
-  $('#home').addEventListener('click',() => show('buzz'));
+  $('#home').addEventListener('click',() => show('camera'));
   for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click',() => show(button.dataset.go));
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
@@ -124,32 +124,14 @@
   function chime() {
     if(soundOn)sounds.chime();
   }
-  function result(clear) {
-    show('result'); app.classList.add(clear ? 'clear-state' : 'alert-state');
-    $('#result-screen').classList.remove('photo-result');
-    $('#result-badge').textContent = 'PRETEND RESULT · PRACTICE ONLY';
-    $('#result-photo').hidden = true;
-    $('#result-screen .result-note').textContent = 'A pretend result. These practice buttons do not check a photo.';
-    $('#result-title').innerHTML = clear ? 'ALL<br>CLEAR!' : 'WASP<br>HERE!';
-    $('#result-message').textContent = clear ? 'Practice finished! Stay with your grown-up.' : 'Stay back and tell a grown-up!';
-    $('#result-wasp').hidden = clear; $('#result-sun').hidden = !clear;
-    $('#result-sticker').textContent = clear ? '✓' : '!';
-    $('#acknowledge').textContent = clear ? 'Yay!' : 'Got it!';
-    practiceHistory.unshift({clear,time:Date.now()}); practiceHistory = practiceHistory.slice(0,20);
-    save('buzz-practice',JSON.stringify(practiceHistory));
-    chime(); if (!clear) navigator.vibrate?.([130,100,130]);
-    speak(clear ? 'Pretend all clear! Practice finished. Stay with your grown-up.' : 'Practice alert! Stay calm. Walk away slowly, and tell your grown-up.');
-  }
-  $('#practice-alert').addEventListener('click',() => { dialog.close(); result(false); });
-  $('#clear').addEventListener('click',() => { dialog.close(); result(true); });
-  $('#acknowledge').addEventListener('click',() => show('buzz'));
+  $('#acknowledge').addEventListener('click',() => show('camera'));
   function renderHistory() {
     const list = $('#history-list'); list.replaceChildren();
-    if (!practiceHistory.length) { const empty = document.createElement('p');empty.className='empty';empty.textContent='No practice yet. Let’s try it together!';list.append(empty); }
+    if (!practiceHistory.length) { const empty = document.createElement('p');empty.className='empty';empty.textContent='No photo checks yet.';list.append(empty); }
     for (const item of practiceHistory) {
       const entry = document.createElement('p');
       const names = {possible_wasp:'Photo · Possible wasp',possible_bee:'Photo · Possible bee',no_wasp_visible:'Photo · No wasp spotted',uncertain:'Photo · Not sure'};
-      const label = names[item.verdict] || `${item.clear ? '☀ All clear' : '✳ Wasp alert'} · Pretend`;
+      const label = names[item.verdict] || 'Photo · Not sure';
       entry.textContent = `${label}\n${new Date(item.time).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
       entry.style.whiteSpace='pre-line';list.append(entry);
     }
@@ -181,7 +163,7 @@
   window.addEventListener('beforeinstallprompt',event => { event.preventDefault();installPrompt=event;$('#install').hidden=false; });
   $('#install').addEventListener('click',async () => {
     if(!installPrompt)return;
-    try { await installPrompt.prompt();const choice=await installPrompt.userChoice;$('#install-message').textContent=choice.outcome==='accepted' ? 'Installation requested. Look for Wasp Buddy on your home screen.' : 'You can install later or keep playing in the browser.'; }
+    try { await installPrompt.prompt();const choice=await installPrompt.userChoice;$('#install-message').textContent=choice.outcome==='accepted' ? 'Installation requested. Look for Wasp Buddy on your home screen.' : 'You can install later or keep using the camera in your browser.'; }
     catch { $('#install-message').textContent='Use your browser’s Add to Home Screen option.'; }
     installPrompt=undefined;$('#install').hidden=true;
   });
