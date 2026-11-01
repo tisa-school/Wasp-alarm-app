@@ -15,6 +15,7 @@
       }catch{return false;}
     }
     stop(){
+      if(this.utterance){this.utterance.onend=null;this.utterance.onerror=null;}
       window.speechSynthesis?.cancel();this.utterance=undefined;
       for(const node of this.nodes){try{node.stop();}catch{}}
       this.nodes.clear();
@@ -38,18 +39,28 @@
       });
       return true;
     }
-    speak(text){
-      if(!this.enabled || !('speechSynthesis' in window))return false;
+    speak(text,{onError}={}){
+      if(!this.enabled)return false;
+      if(!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)){
+        onError?.('This browser cannot play Buzz’s voice. You can read the answer on screen.');return false;
+      }
       try{
+        if(this.utterance){this.utterance.onend=null;this.utterance.onerror=null;}
         window.speechSynthesis.cancel();
         const message=new SpeechSynthesisUtterance(text);
         const voices=window.speechSynthesis.getVoices();
         message.voice=voices.find(voice=>voice.lang==='en-GB')||voices.find(voice=>voice.lang?.startsWith('en'))||null;
         message.lang=message.voice?.lang||'en-GB';message.rate=.83;message.pitch=1.08;
+        message.onend=()=>{if(this.utterance===message)this.utterance=undefined;};
+        message.onerror=event=>{
+          if(this.utterance!==message)return;
+          this.utterance=undefined;
+          if(event.error!=='canceled' && event.error!=='interrupted')onError?.('Buzz’s voice could not play. Check your browser’s sound settings, or read the answer on screen.');
+        };
         this.utterance=message; // Retain it: some mobile browsers otherwise drop playback.
         window.speechSynthesis.resume();window.speechSynthesis.speak(message);
         return true;
-      }catch{return false;}
+      }catch{onError?.('Buzz’s voice could not start. You can read the answer on screen.');return false;}
     }
   }
   window.BuzzSound=BuzzSound;

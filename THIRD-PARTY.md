@@ -10,3 +10,9 @@ Google Coral's `google-coral/test_data` repository at commit
 The original license and pinned source URLs/SHA-256 hashes are in `models/`.
 The model and labels are unmodified. Application grouping and uncertainty rules
 are specific to Wasp Buddy, and are not model accuracy guarantees.
+
+The additional general-image model is Google Coral’s unmodified MobileNet V2
+ImageNet quantized model, with its 1,001 labels, from the same pinned commit and
+under the same Apache-2.0 license. Source URLs and SHA-256 hashes are recorded in
+`models/provenance.json`. Its insect-class scores provide an experimental rejection
+check; they are not calibrated probabilities that an insect is present.
