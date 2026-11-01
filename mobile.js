@@ -58,6 +58,7 @@
     const busy=Boolean(scanController)||cameraPending;
     const visible=!document.hidden && screen==='camera' && (busy||Boolean(stream)||Boolean(selectedPhoto));
     $('#scan-radar').hidden=!visible;
+    $('#focus-photo').hidden=!selectedPhoto;
     $('#scan-radar').classList.toggle('is-busy',busy);
     $('.camera-frame').classList.toggle('radar-visible',visible);
     $('.camera-frame').setAttribute('aria-busy',String(busy));
@@ -244,6 +245,58 @@
       $('#camera-status').textContent=photoChecksEnabled ? 'Your photo is ready. Tap Scan with your grown-up to check it.' : 'Your real photo is ready. This camera version cannot recognise wasps.';
     }catch{$('#camera-status').textContent='Could not read that photo. Try taking another picture.';}
     finally{URL.revokeObjectURL(url);}
+  });
+  const focusDialog=$('#focus-dialog');
+  let focusImage,focusGeometry,focusGeneration=0;
+  function currentFocus(){return focusGeometry(focusImage.naturalWidth,focusImage.naturalHeight,Number($('#focus-x').value),Number($('#focus-y').value),Number($('#focus-size').value));}
+  function drawFocus(){
+    if(!focusImage||!focusGeometry)return;
+    const canvas=$('#focus-preview'),context=canvas.getContext('2d');
+    const scale=Math.min(1,640/Math.max(focusImage.naturalWidth,focusImage.naturalHeight));
+    canvas.width=Math.max(1,Math.round(focusImage.naturalWidth*scale));canvas.height=Math.max(1,Math.round(focusImage.naturalHeight*scale));
+    context.drawImage(focusImage,0,0,canvas.width,canvas.height);
+    const crop=currentFocus(),sx=canvas.width/focusImage.naturalWidth,sy=canvas.height/focusImage.naturalHeight;
+    const x=crop.x*sx,y=crop.y*sy,w=crop.size*sx,h=crop.size*sy;
+    context.fillStyle='#0b261ab3';
+    context.fillRect(0,0,canvas.width,y);context.fillRect(0,y+h,canvas.width,canvas.height-y-h);
+    context.fillRect(0,y,x,h);context.fillRect(x+w,y,canvas.width-x-w,h);
+    context.strokeStyle='#ffcf00';context.lineWidth=3;context.strokeRect(x,y,w,h);
+    $('#focus-status').textContent='Only the yellow box will be scanned.';
+  }
+  async function openFocus(source){
+    if(!source)return;
+    cancelScan();stopListening();sounds.stop();
+    const generation=++focusGeneration;focusImage=undefined;
+    for(const [id,value] of [['focus-x','50'],['focus-y','50'],['focus-size','45']])$('#'+id).value=value;
+    $('#focus-apply').disabled=true;$('#focus-status').textContent='Loading photo…';focusDialog.showModal();
+    try{
+      const [{cropRect},image]=await Promise.all([import('./photo-crop.mjs'),(async()=>{const image=new Image();image.src=source;await image.decode();return image;})()]);
+      if(generation!==focusGeneration||!focusDialog.open)return;
+      focusImage=image;focusGeometry=cropRect;drawFocus();$('#focus-apply').disabled=false;
+    }catch{if(generation===focusGeneration)$('#focus-status').textContent='Could not open this photo. Keep the original photo and try again.';}
+  }
+  $('#focus-photo').addEventListener('click',()=>openFocus(selectedPhoto));
+  $('#focus-result').addEventListener('click',()=>openFocus($('#result-photo').getAttribute('src')));
+  for(const id of ['focus-x','focus-y','focus-size'])$('#'+id).addEventListener('input',drawFocus);
+  $('#focus-preview').addEventListener('pointerdown',event=>{
+    if(!focusImage)return;
+    const box=event.currentTarget.getBoundingClientRect();
+    $('#focus-x').value=String(Math.round(100*(event.clientX-box.left)/box.width));
+    $('#focus-y').value=String(Math.round(100*(event.clientY-box.top)/box.height));drawFocus();
+  });
+  for(const id of ['focus-close','focus-cancel'])$('#'+id).addEventListener('click',()=>focusDialog.close());
+  focusDialog.addEventListener('close',()=>{focusGeneration++;focusImage=undefined;$('#focus-preview').width=1;$('#focus-preview').height=1;});
+  $('#focus-apply').addEventListener('click',()=>{
+    if(!focusImage||!focusGeometry)return;
+    try{
+      const crop=currentFocus(),canvas=document.createElement('canvas');canvas.width=canvas.height=Math.min(960,crop.size);
+      canvas.getContext('2d').drawImage(focusImage,crop.x,crop.y,crop.size,crop.size,0,0,canvas.width,canvas.height);
+      const photo=canvas.toDataURL('image/jpeg',.9);
+      show('camera');stopCamera();selectedPhoto=photo;
+      $('#captured-photo').src=photo;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;updateRadar();
+      $('#camera-status').textContent='Selected area ready. Tap Scan to check this insect photo.';
+      focusDialog.close();$('#check').focus();
+    }catch{$('#focus-status').textContent='Could not use that selection. Keep the original photo and try again.';}
   });
   function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
   function photoResult(verdict,photo,reason){
