@@ -52,3 +52,16 @@ test('Photo details need agreement and never bypass either model',async()=>{
   assert.equal(combinePhotoViews([wasp,bee],{verdict:'possible_wasp'}).verdict,'uncertain');
   assert.equal(combinePhotoViews([{verdict:'possible_wasp',reason:'unverified'}],{verdict:'possible_wasp'}).verdict,'uncertain');
 });
+
+test('Photo selection stays within portrait and landscape source pixels',async()=>{
+  const {cropRect}=await import('../public/photo-crop.mjs');
+  assert.deepEqual(cropRect(600,600,75,25,40),{x:330,y:30,size:240});
+  assert.deepEqual(cropRect(800,400,100,100,50),{x:600,y:200,size:200});
+  assert.deepEqual(cropRect(400,800,0,0,100),{x:0,y:0,size:400});
+  for(const [width,height] of [[400,800],[800,400],[1,1]])for(const x of [-10,50,110])for(const y of [-10,50,110]){
+    const crop=cropRect(width,height,x,y,300);
+    assert.ok(crop.x>=0&&crop.y>=0&&crop.size>0);
+    assert.ok(crop.x+crop.size<=width&&crop.y+crop.size<=height);
+  }
+  assert.throws(()=>cropRect(0,200));assert.throws(()=>cropRect(NaN,200));
+});

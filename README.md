@@ -12,6 +12,13 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 4. Possible wasp and bee matches show an alert and sound when enabled. Other or weak results explain uncertainty or say **Insect not confirmed**. Keep a grown-up nearby.
 5. The speaker button mutes/unmutes sound; unmuting plays a confirmation chime. **Grown-ups → Test sound** plays three notes and requests Buzz's voice. Check device volume, silent mode, and browser sound settings if silent.
 
+If a photo contains a collage or screen borders, use **Focus on one insect**
+from the photo preview or result. Tap one insect in the stored photo, adjust
+**Box size**, choose **Use selected area**, then tap **Scan**. Position controls
+also work with a keyboard. Cancel keeps the original photo. This only crops the
+local photo; it does not bypass the image models or upload it. It is a workaround
+for framing problems, not reliable automatic recognition of every collage.
+
 ## What recognition means
 
 Photo identification is experimental and uses two local models. A general-image

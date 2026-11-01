@@ -92,6 +92,40 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     assert.equal(result.distanceAvailable,false);
     console.log('PASS Photo embedded in a screen:',file,'→',result.verdict);
   }
+  const collage=await page.evaluate(async sources=>{
+    const images=await Promise.all(sources.map(async src=>{const image=new Image();image.src=src;await image.decode();return image;}));
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=600;
+    const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,600,600);
+    context.fillStyle='#111';context.font='26px sans-serif';context.fillText('Insect photo collage',10,28);
+    for(let i=0;i<4;i++)context.drawImage(images[i],(i%2)*300,40+Math.floor(i/2)*280,300,260);
+    return canvas.toDataURL('image/jpeg',.9);
+  },await Promise.all(['natural-wasps-1.jpg','natural-wasps-3.jpg','natural-wasps-2.jpg','natural-bees-2.jpg'].map(async file=>'data:image/jpeg;base64,'+(await readFile(path.join(fixtures,file))).toString('base64'))));
+  await page.locator('#home').click();await page.locator('#practice').click();
+  const collageChooser=page.waitForEvent('filechooser');await page.locator('#choose-photo').click();
+  await(await collageChooser).setFiles({name:'collage.jpg',mimeType:'image/jpeg',buffer:Buffer.from(collage.split(',')[1],'base64')});
+  await page.locator('#focus-photo').waitFor({state:'visible'});
+  const originalPhoto=await page.locator('#captured-photo').getAttribute('src');
+  await page.locator('#focus-photo').click();await page.locator('#focus-apply').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.querySelector('#focus-apply').disabled);
+  await page.locator('#focus-cancel').click();assert.equal(await page.locator('#captured-photo').getAttribute('src'),originalPhoto,'Cancel preserves the original photo');
+  await page.locator('#focus-photo').click();await page.waitForFunction(()=>!document.querySelector('#focus-apply').disabled);
+  for(const [id,value] of [['focus-x','75'],['focus-y','28'],['focus-size','40']]){
+    await page.locator('#'+id).evaluate((el,value)=>{el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));},value);
+  }
+  await page.locator('#focus-apply').click();
+  assert.equal(await page.locator('#focus-dialog').evaluate(el=>el.open),false);
+  assert.match(await page.locator('#camera-status').textContent(),/Selected area ready/);
+  assert.notEqual(await page.locator('#captured-photo').getAttribute('src'),originalPhoto);
+  assert.equal(await page.locator('#check').evaluate(el=>el===document.activeElement),true);
+  await scan(page);assert.match(await page.locator('#result-title').textContent(),/POSSIBLEWASP/);
+  await page.locator('#focus-result').click();await page.waitForFunction(()=>!document.querySelector('#focus-apply').disabled);
+  await page.locator('#focus-cancel').click();assert.equal(await page.locator('#result-screen').isVisible(),true);
+  console.log('PASS Select a single wasp within a collage, cancel without losing the original, scan the chosen pixels, and reopen selection from the result.');
+  await page.locator('#home').click();await page.locator('#practice').click();await choosePhoto(page,path.join(fixtures,'person.bmp'));
+  await page.locator('#focus-photo').click();await page.waitForFunction(()=>!document.querySelector('#focus-apply').disabled);
+  await page.locator('#focus-apply').click();await scan(page);
+  assert.doesNotMatch(await page.locator('#result-title').textContent(),/POSSIBLE(WASP|BEE)/,'Selecting a portrait does not establish insect presence');
+  console.log('PASS A selected portrait still cannot trigger an insect alert.');
   const stopped=await page.evaluate(async()=>{
     const {classifyPhoto}=await import('./insect-classifier.mjs');const controller=new AbortController();controller.abort();
     try{await classifyPhoto('unused',{signal:controller.signal});return false;}catch(error){return error.name==='AbortError';}
