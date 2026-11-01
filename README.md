@@ -17,8 +17,10 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 Photo identification is experimental and uses two local models. A general-image
 MobileNet model must put strong evidence on insect classes before the separate
 iNaturalist species model can return **Possible wasp** or **Possible bee**.
-Otherwise, the result explains **Insect not confirmed** or an uncertain species
-match. A portrait is not a suitable insect photo; the app does not identify people.
+If the whole photo is uncertain, Buzz checks six bounded detail crops. A crop
+must pass both models and agree with another crop or the whole-photo species
+guess; conflicting wasp/bee crop guesses remain uncertain. Otherwise, the result
+explains **Insect not confirmed** or an uncertain species match. A portrait is not a suitable insect photo; the app does not identify people.
 
 This replaces the previous unconditional “I’m not sure” fallback without trusting
 an insect-only model on every image. Both models can still be wrong. This is not
@@ -28,8 +30,16 @@ is supported.
 
 The fixed browser regression set currently identifies 1 of 3 wasp photos and both
 bee photos, rejects the cat and portrait, and leaves the dragonfly unidentified.
-These are regression checks, not an estimate of real-world accuracy. Reliable
+The framed-photo regressions also identify the clear wasp and bee inside a
+simulated phone screen while rejecting the framed portrait and cat. These are
+regression checks, not an estimate of real-world accuracy. Reliable
 field detection still needs a larger, independent validation dataset.
+
+A mint radar overlays the preview when the camera is starting or a photo is ready.
+It says **Ready to scan** until Scan is tapped, then brightens and sweeps faster
+while the models download or analyze the image. It is a progress indicator, not
+continuous insect detection. Leaving the camera, hiding the app, or completing a
+check stops the busy state. Reduced-motion mode keeps a still glow and text.
 
 ## Sound and camera
 

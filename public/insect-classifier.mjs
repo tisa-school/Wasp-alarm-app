@@ -27,7 +27,7 @@ async function checkedAsset(file,expected) {
 }
 async function getEngine(onProgress) {
   if(!enginePromise)enginePromise=(async()=>{
-    onProgress?.('Getting Buzz ready… the first scan downloads the insect model.');
+    onProgress?.('Getting Buzz ready… the first scan downloads the image models.');
     const [vision,model,labelBytes,sceneModel,sceneLabelBytes]=await Promise.all([
       import('./vendor/mediapipe/vision_bundle.mjs'),
       checkedAsset('models/insects.tflite','0ebaeb474dccf56b8b818b014f0d6a8e22b35a45b491a659f0b5405c9c838282'),
@@ -48,16 +48,39 @@ async function getEngine(onProgress) {
   return enginePromise;
 }
 export async function classifyPhoto(photo,{signal,onProgress}={}) {
+  if(signal?.aborted)throw new DOMException('Stopped','AbortError');
   const engine=await getEngine(onProgress);
   if(signal?.aborted)throw new DOMException('Stopped','AbortError');
   const image=new Image();image.src=photo;await image.decode();
   if(signal?.aborted)throw new DOMException('Stopped','AbortError');
-  onProgress?.('Looking at this photo…');
-  const scene=engine.sceneClassifier.classify(image).classifications[0]?.categories||[];
+  const views=[];
+  const score=view=>{
+    const scene=engine.sceneClassifier.classify(view).classifications[0]?.categories||[];
+    const output=engine.classifier.classify(view);
+    const species=(output.classifications[0]?.categories||[]).map(category=>({label:engine.labels[category.index]||'',score:category.score}));
+    return {result:guardedPhotoResult(species,scene),species:summarizePredictions(species)};
+  };
+  onProgress?.('Looking at the whole photo…');
+  // Yield between bounded synchronous inferences so navigation and the radar
+  // remain responsive. Never keep checking once the user cancels or leaves.
+  await new Promise(resolve=>setTimeout(resolve,0));
   if(signal?.aborted)throw new DOMException('Stopped','AbortError');
-  const output=engine.classifier.classify(image);
-  const predictions=(output.classifications[0]?.categories||[]).map(category=>({label:engine.labels[category.index]||'',score:category.score}));
-  return guardedPhotoResult(predictions,scene);
+  const full=score(image);views.push(full.result);
+  if(full.result.verdict!=='uncertain')return full.result;
+  const crops=[[.7,.5,.5],[.5,.5,.5],[.65,0,0],[.65,1,0],[.65,0,1],[.65,1,1]];
+  const canvas=document.createElement('canvas');canvas.width=224;canvas.height=224;
+  const context=canvas.getContext('2d');
+  for(const [index,[scale,x,y]] of crops.entries()){
+    onProgress?.('Checking photo detail '+(index+1)+' of '+crops.length+'…');
+    await new Promise(resolve=>setTimeout(resolve,0));
+    if(signal?.aborted)throw new DOMException('Stopped','AbortError');
+    const side=Math.min(image.naturalWidth,image.naturalHeight)*scale;
+    context.drawImage(image,(image.naturalWidth-side)*x,(image.naturalHeight-side)*y,side,side,0,0,224,224);
+    views.push(score(canvas).result);
+  }
+  if(signal?.aborted)throw new DOMException('Stopped','AbortError');
+  return combinePhotoViews(views,full.species);
+
 }
 
 export function unverifiedPhotoResult(predictions) {
@@ -83,4 +106,14 @@ export function guardedPhotoResult(species,scene) {
   return candidate.verdict==='uncertain'
     ? {...unverifiedPhotoResult(),reason:'species_uncertain'}
     : {...candidate,reason:'two_model_candidate'};
+}
+
+// A crop must pass both existing models. Require agreement with the full-photo
+// species guess or a second crop; conflicting wasp/bee views remain uncertain.
+export function combinePhotoViews(views,fullSpecies) {
+  const candidates=views.filter(view=>view.reason==='two_model_candidate' && ['possible_wasp','possible_bee'].includes(view.verdict));
+  const kinds=new Set(candidates.map(view=>view.verdict));
+  if(kinds.size===1 && (candidates.length>=2 || fullSpecies?.verdict===candidates[0].verdict))
+    return {...candidates[0],reason:'two_model_candidate'};
+  return {...unverifiedPhotoResult(),reason:kinds.size || views.some(view=>view.reason==='species_uncertain')?'species_uncertain':'insect_not_confirmed'};
 }

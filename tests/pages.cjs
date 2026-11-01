@@ -75,6 +75,27 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     else console.log('PASS Real model:',file,'→',title);
   }
   console.log(`Real model sample outcome: ${waspsDetected}/3 wasp photos identified; two bee photos must be identified, and portrait/cat photos rejected. Uncertain results are not an all clear.`);
+  for(const [file,expected] of [['natural-wasps-3.jpg','possible_wasp'],['natural-bees-2.jpg','possible_bee'],['person.bmp','uncertain'],['cat.bmp','uncertain']]){
+    const source='data:image/'+(file.endsWith('.bmp')?'bmp':'jpeg')+';base64,'+(await readFile(path.join(fixtures,file))).toString('base64');
+    const result=await page.evaluate(async source=>{
+      const image=new Image();image.src=source;await image.decode();
+      // A photo embedded in a screen, with borders and text, rather than a
+      // tightly framed source image. This used to lose the clear wasp match.
+      const canvas=document.createElement('canvas');canvas.width=720;canvas.height=960;
+      const context=canvas.getContext('2d');context.fillStyle='#28241e';context.fillRect(0,0,720,960);
+      context.fillStyle='#fff';context.fillRect(70,160,580,700);context.fillStyle='#111';context.font='32px sans-serif';context.fillText('Photo on a screen',100,210);
+      context.drawImage(image,100,300,520,400);
+      const {classifyPhoto}=await import('./insect-classifier.mjs');
+      return classifyPhoto(canvas.toDataURL('image/jpeg',.82));
+    },source);
+    assert.equal(result.verdict,expected,'Framed '+file);
+    assert.equal(result.distanceAvailable,false);
+    console.log('PASS Photo embedded in a screen:',file,'→',result.verdict);
+  }
+  const stopped=await page.evaluate(async()=>{
+    const {classifyPhoto}=await import('./insect-classifier.mjs');const controller=new AbortController();controller.abort();
+    try{await classifyPhoto('unused',{signal:controller.signal});return false;}catch(error){return error.name==='AbortError';}
+  });assert.equal(stopped,true,'Canceled analysis cannot return a prediction');
   for(const fill of ['white','black']){
     const result=await page.evaluate(async fill=>{
       const canvas=document.createElement('canvas');canvas.width=224;canvas.height=224;

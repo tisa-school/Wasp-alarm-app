@@ -40,3 +40,15 @@ test('A species guess needs separate general-image insect evidence',async()=>{
   const weak=guardedPhotoResult([{label:'Vespula vulgaris',score:.2}],[{index:310,score:.9}]);
   assert.equal(weak.verdict,'uncertain');assert.equal(weak.reason,'species_uncertain');
 });
+
+test('Photo details need agreement and never bypass either model',async()=>{
+  const {combinePhotoViews}=await import('../public/insect-classifier.mjs');
+  const wasp={verdict:'possible_wasp',reason:'two_model_candidate',distanceAvailable:false,scope:'single_photo'};
+  const bee={...wasp,verdict:'possible_bee'};
+  const unsure={verdict:'uncertain',reason:'insect_not_confirmed'};
+  assert.equal(combinePhotoViews([unsure,wasp],{verdict:'uncertain'}).verdict,'uncertain');
+  assert.equal(combinePhotoViews([unsure,wasp],{verdict:'possible_wasp'}).verdict,'possible_wasp');
+  assert.equal(combinePhotoViews([wasp,wasp],{verdict:'uncertain'}).verdict,'possible_wasp');
+  assert.equal(combinePhotoViews([wasp,bee],{verdict:'possible_wasp'}).verdict,'uncertain');
+  assert.equal(combinePhotoViews([{verdict:'possible_wasp',reason:'unverified'}],{verdict:'possible_wasp'}).verdict,'uncertain');
+});

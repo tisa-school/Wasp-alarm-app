@@ -133,6 +133,49 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     }
     assert.equal(uploads,3);
   });
+  await check('Radar follows camera waiting, scan progress, completion and cancellation, with reduced motion',async()=>{
+    const radarContext=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});
+    await radarContext.addInitScript(()=>{
+      window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};
+      localStorage.setItem('buzz-photo-allowed','yes');
+      Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:()=>new Promise((resolve,reject)=>{window.__denyCamera=()=>reject(new DOMException('Denied','NotAllowedError'));})});
+    });
+    try{
+      const radarPage=await radarContext.newPage();radarPage.on('pageerror',error=>errors.push(error.message));
+      await radarPage.goto(base);await radarPage.locator('#practice').click();
+      assert.equal(await radarPage.locator('#scan-radar').isVisible(),false);
+      await radarPage.locator('#take-photo').click();
+      assert.equal(await radarPage.locator('#scan-radar').isVisible(),true);
+      assert.match(await radarPage.locator('#radar-label').textContent(),/Waiting for camera/);
+      await radarPage.evaluate(()=>window.__denyCamera());
+      await radarPage.waitForFunction(()=>document.querySelector('.camera-frame').getAttribute('aria-busy')==='false');
+      assert.equal(await radarPage.locator('#scan-radar').isVisible(),false);
+      await choosePhoto(radarPage);await radarPage.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
+      assert.equal(await radarPage.locator('#radar-label').textContent(),'Ready to scan');
+      let pending;
+      await radarPage.route('**/api/scan',route=>{pending=route;});
+      await radarPage.locator('#check').click();
+      await radarPage.waitForFunction(()=>document.querySelector('#scan-radar').classList.contains('is-busy'));
+      assert.equal(await radarPage.locator('.camera-frame').getAttribute('aria-busy'),'true');
+      const before=await radarPage.locator('.radar-sweep').evaluate(el=>getComputedStyle(el).transform);
+      await radarPage.waitForTimeout(120);
+      assert.notEqual(await radarPage.locator('.radar-sweep').evaluate(el=>getComputedStyle(el).transform),before);
+      await radarPage.emulateMedia({reducedMotion:'reduce'});
+      assert.equal(await radarPage.locator('.radar-sweep').evaluate(el=>getComputedStyle(el).animationName),'none');
+      assert.match(await radarPage.locator('#radar-label').textContent(),/Analyzing/);
+      await pending.fulfill({json:{verdict:'uncertain'}});
+      await radarPage.locator('#result-screen').waitFor({state:'visible'});
+      assert.equal(await radarPage.locator('#scan-radar').evaluate(el=>el.hidden),true);
+      assert.equal(await radarPage.locator('.camera-frame').getAttribute('aria-busy'),'false');
+      await radarPage.locator('#home').click();await radarPage.locator('#practice').click();await choosePhoto(radarPage);
+      await radarPage.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
+      await radarPage.locator('#check').click();await radarPage.waitForFunction(()=>document.querySelector('.camera-frame').getAttribute('aria-busy')==='true');
+      await radarPage.locator('#home').click();
+      assert.equal(await radarPage.locator('#scan-radar').evaluate(el=>el.hidden),true);
+      assert.equal(await radarPage.locator('.camera-frame').getAttribute('aria-busy'),'false');
+      assert.equal(await radarPage.locator('#buzz-screen').isVisible(),true);
+    }finally{await radarContext.close();}
+  });
   await check('A failed online scan produces no result',async()=>{
     await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page);
