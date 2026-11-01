@@ -54,6 +54,15 @@
     $('#microphone').classList.remove('listening');
     $('#microphone').setAttribute('aria-label', 'Ask Buzz a question using your microphone');
   }
+  function updateRadar(){
+    const busy=Boolean(scanController)||cameraPending;
+    const visible=!document.hidden && screen==='camera' && (busy||Boolean(stream)||Boolean(selectedPhoto));
+    $('#scan-radar').hidden=!visible;
+    $('#scan-radar').classList.toggle('is-busy',busy);
+    $('.camera-frame').classList.toggle('radar-visible',visible);
+    $('.camera-frame').setAttribute('aria-busy',String(busy));
+    $('#radar-label').textContent=scanController?'Analyzing photo…':cameraPending?'Waiting for camera…':'Ready to scan';
+  }
   function stopCamera() {
     cameraGeneration++;
     stream?.getTracks().forEach(track => track.stop()); stream = undefined;
@@ -62,14 +71,14 @@
     $('#enable-camera').disabled = false;
     $('#take-photo').disabled = false;
     $('#take-photo').textContent = '📷 Start camera';
-    cameraPending = false;
+    cameraPending = false;updateRadar();
   }
   function show(next) {
     cancelScan();
     stopListening(); sounds.stop(); navigator.vibrate?.(0);
     if (next !== 'camera') { stopCamera(); clearPhoto(); }
     if (next !== 'result') { $('#result-photo').hidden = true; $('#result-photo').removeAttribute('src'); }
-    screen = next;
+    screen = next;updateRadar();
     document.querySelectorAll('.screen').forEach(section => section.hidden = section.id !== `${next}-screen`);
     app.classList.remove('alert-state','clear-state','photo-neutral');
     window.scrollTo({top:0,behavior:'instant'});
@@ -111,7 +120,7 @@
     if (cameraPending || stream) return;
     if (!navigator.mediaDevices?.getUserMedia) { $('#camera-status').textContent = 'Live video needs a secure website. You can still use “Choose a photo”.'; return; }
     clearPhoto();
-    cameraPending = true; $('#enable-camera').disabled = true;
+    cameraPending = true;updateRadar(); $('#enable-camera').disabled = true;
     $('#take-photo').disabled = true;
     const generation = ++cameraGeneration;
     try {
@@ -123,7 +132,7 @@
     } catch (error) {
       if (generation === cameraGeneration) $('#camera-status').textContent = error.name === 'NotAllowedError' ? 'Camera permission was not given. Allow it in your browser’s site settings, or use “Choose a photo”.' : 'Camera unavailable. Check another app is not using it, or use “Choose a photo”.';
     } finally {
-      if (generation === cameraGeneration) { cameraPending = false; $('#enable-camera').disabled = false; $('#take-photo').disabled = false; }
+      if (generation === cameraGeneration) { cameraPending = false;updateRadar(); $('#enable-camera').disabled = false; $('#take-photo').disabled = false; }
     }
   }
   $('#enable-camera').addEventListener('click',startCamera);
@@ -213,7 +222,7 @@
     installPrompt=undefined;$('#install').hidden=true;
   });
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  function clearPhoto() { $('#photo-file').value=''; selectedPhoto = undefined; $('#captured-photo').hidden = true; $('#captured-photo').removeAttribute('src'); }
+  function clearPhoto() { $('#photo-file').value=''; selectedPhoto = undefined; $('#captured-photo').hidden = true; $('#captured-photo').removeAttribute('src');updateRadar(); }
   function photoData(image,width,height) {
     if(!width || !height)throw new Error('Camera not ready');
     const scale=Math.min(1,960/Math.max(width,height));
@@ -231,12 +240,12 @@
       const image=new Image();image.src=url;await image.decode();
       if(screen!=='camera' || generation!==cameraGeneration)return;
       selectedPhoto=photoData(image,image.naturalWidth,image.naturalHeight);
-      $('#captured-photo').src=selectedPhoto;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;
+      $('#captured-photo').src=selectedPhoto;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;updateRadar();
       $('#camera-status').textContent=photoChecksEnabled ? 'Your photo is ready. Tap Scan with your grown-up to check it.' : 'Your real photo is ready. This camera version cannot recognise wasps.';
     }catch{$('#camera-status').textContent='Could not read that photo. Try taking another picture.';}
     finally{URL.revokeObjectURL(url);}
   });
-  function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;}
+  function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
   function photoResult(verdict,photo,reason){
     show('result');$('#result-screen').classList.add('photo-result');
     $('#result-badge').textContent='ONE PHOTO · NOT A SAFETY GUARANTEE';
@@ -249,7 +258,7 @@
     };
     const warning=verdict==='possible_wasp'||verdict==='possible_bee';
     const outcome={...outcomes[verdict]};
-    if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'INSECT NOT<br>CONFIRMED',message:'Buzz could not confirm an insect in this photo. Try an existing insect photo with your grown-up.',voice:'I could not confirm an insect in this photo. Ask your grown-up to help. This does not mean the area is safe.'});
+    if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'INSECT NOT<br>CONFIRMED',message:'Buzz could not confirm an insect. Screen borders, small subjects, or blur can hide it. Try the original photo with your grown-up.',voice:'I could not confirm an insect in this photo. Ask your grown-up to help. This does not mean the area is safe.'});
     if(reason==='species_uncertain')Object.assign(outcome,{message:'The models could not agree on a wasp or bee. Try a clearer existing photo. Do not move closer to an insect.'});app.classList.add(warning?'alert-state':'photo-neutral');
     $('#result-title').innerHTML=outcome.title;$('#result-message').textContent=outcome.message;$('#result-sticker').textContent=outcome.symbol;
     $('#acknowledge').textContent='Got it!';$('#result-screen .result-note').textContent='A photo check can miss insects. It cannot measure distance or confirm safety.';
@@ -263,7 +272,7 @@
     if(!photoChecksEnabled){
       try{
         const photo=selectedPhoto||photoData($('#camera'),$('#camera').videoWidth,$('#camera').videoHeight);
-        stopCamera();selectedPhoto=photo;$('#captured-photo').src=photo;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;
+        stopCamera();selectedPhoto=photo;$('#captured-photo').src=photo;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;updateRadar();
         $('#camera-status').textContent='Photo taken on this device. Automatic wasp recognition is not connected.';
       }catch{$('#camera-status').textContent='Camera is warming up. Try Photo again in a moment.';}
       return;
@@ -273,14 +282,14 @@
     let photo;
     try{photo=selectedPhoto||photoData($('#camera'),$('#camera').videoWidth,$('#camera').videoHeight);}
     catch{$('#camera-status').textContent='The camera is still warming up. Try Scan again in a moment.';return;}
-    scanController=new AbortController();const current=scanController,generation=++scanGeneration;
+    scanController=new AbortController();const current=scanController,generation=++scanGeneration;updateRadar();
     $('#check').disabled=true;$('#check').textContent='WAIT…';$('#camera-status').textContent='Checking this photo… stay with your grown-up.';
     speak('Checking your photo. Stay with your grown-up.');
     const timer=setTimeout(()=>current.abort(),localRecognition?90_000:30_000);
     try{
       if(localRecognition){
         const {classifyPhoto}=await import('./insect-classifier.mjs');
-        const body=await classifyPhoto(photo,{signal:current.signal,onProgress:message=>{if(generation===scanGeneration && screen==='camera')$('#camera-status').textContent=message;}});
+        const body=await classifyPhoto(photo,{signal:current.signal,onProgress:message=>{if(generation===scanGeneration && screen==='camera'){$('#camera-status').textContent=message;$('#radar-label').textContent=/Getting|Loading/.test(message)?'Getting ready…':'Analyzing photo…';}}});
         if(generation!==scanGeneration || screen!=='camera' || current.signal.aborted)return;
         photoResult(body.verdict,photo,body.reason);return;
       }
@@ -294,7 +303,7 @@
       if(!['possible_wasp','no_wasp_visible','uncertain'].includes(body.verdict))throw new Error('Invalid result');
       photoResult(body.verdict,photo);
     }catch{if(generation===scanGeneration && screen==='camera')$('#camera-status').textContent='Could not check this photo. You may be offline, or the photo service is unavailable. No result was made.';}
-    finally{clearTimeout(timer);if(generation===scanGeneration){scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;}}
+    finally{clearTimeout(timer);if(generation===scanGeneration){scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}}
   });
   if(!photoChecksEnabled){
     $('#check').textContent=scanLabel;
@@ -312,5 +321,5 @@
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});
   function pause(){cancelScan();stopListening();stopCamera();sounds.stop();navigator.vibrate?.(0);}
   window.addEventListener('pagehide',pause);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();else updateRadar();});
 })();
