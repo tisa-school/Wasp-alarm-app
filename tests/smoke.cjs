@@ -22,9 +22,26 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
   await context.addInitScript(()=>{window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};});
   let page=await context.newPage();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(base);
-  await check('App opens on the real camera screen',async()=>{
-    assert.equal(await page.title(),'Wasp Buddy Camera');
+  await page.goto(base);await page.locator('#practice').click();
+  await check('Talk to Buzz is the first screen, with safety answers and optional voice',async()=>{
+    await page.locator('#home').click();
+    assert.equal(await page.locator('#buzz-screen').isVisible(),true);
+    assert.equal(await page.locator('#buzz-title').textContent(),'Talk to Buzz');
+    assert.match(await page.locator('#speech').textContent(),/Hi! I’m Buzz/);
+    assert.equal(await page.locator('#camera').evaluate(el=>el.srcObject),null);
+    await page.locator('[data-question="space"]').click();
+    assert.match(await page.locator('#speech').textContent(),/Give wasps lots of space/);
+    await page.locator('#microphone').click();
+    assert.equal(await page.locator('dialog').evaluate(el=>el.open),true);
+    await page.locator('#parent-done').click();
+    await page.locator('#practice').click();
+    assert.equal(await page.locator('#camera-screen').isVisible(),true);
+    await page.locator('#camera-screen [data-go="buzz"]').click();
+    assert.equal(await page.locator('#buzz-screen').isVisible(),true);
+    await page.locator('#practice').click();
+  });
+  await check('Open camera opens the real camera screen',async()=>{
+    assert.equal(await page.title(),'Wasp Buddy');
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
     assert.equal(await page.locator('#buzz-screen').isVisible(),false);
     assert.match(await page.locator('#take-photo').textContent(),/Start camera/);
@@ -39,19 +56,19 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.waitForFunction(()=>document.querySelector('#camera').srcObject?.getVideoTracks()[0]?.readyState==='live');
     await page.evaluate(()=>window.testTrack=document.querySelector('#camera').srcObject.getVideoTracks()[0]);
     await page.locator('#history').click();assert.equal(await page.evaluate(()=>window.testTrack.readyState),'ended');
-    await page.locator('#home').click();assert.equal(await page.locator('#camera-screen').isVisible(),true);
+    await page.locator('#home').click();await page.locator('#practice').click();assert.equal(await page.locator('#camera-screen').isVisible(),true);
   });
   await check('Scan history starts empty and can return to camera',async()=>{
     await page.locator('#history').click();assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
-    await page.locator('[data-go="camera"]').click();assert.equal(await page.locator('#camera-screen').isVisible(),true);
+    await page.locator('#history-screen [data-go="buzz"]').click();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await page.locator('#practice').click();
   });
   await check('No horizontal overflow at phone sizes',async()=>{
-    await page.locator('#home').click();
+    await page.locator('#home').click();await page.locator('#practice').click();
     for(const width of [320,390,430]){await page.setViewportSize({width,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
   });
   await check('Camera denial keeps the camera app usable',async()=>{
     await page.addInitScript(()=>Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>{throw new DOMException('Denied','NotAllowedError');}}));
-    await page.reload();await page.locator('#take-photo').click();
+    await page.reload();await page.locator('#practice').click();await page.locator('#take-photo').click();
     await page.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('permission was not given'));
     assert.equal(await page.locator('#take-photo').isVisible(),true);
     assert.equal(await page.locator('#photo-file').getAttribute('capture'),null);
@@ -62,7 +79,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
     await page.reload();
     await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-    await context.setOffline(true);await page.reload();assert.equal(await page.locator('#camera-screen').isVisible(),true);await context.setOffline(false);
+    await context.setOffline(true);await page.reload();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await context.setOffline(false);
   });
   await check('Single-file bundle runs without network or a server',async()=>{
     const local=await browser.newContext({offline:true,viewport:{width:390,height:844}}),file=await local.newPage();
@@ -70,12 +87,12 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     // This cloud browser blocks all file: URLs by administrator policy.
     // Load the exact bundle bytes into a blank offline document instead.
     await file.setContent(await readFile(path.join(root,'dist/Wasp-Buddy.html'),'utf8'));
-    assert.equal(await file.locator('#camera-screen').isVisible(),true);
+    assert.equal(await file.locator('#buzz-screen').isVisible(),true);
     await file.locator('#grownups').click();assert.equal(await file.locator('dialog').evaluate(el=>el.open),true);
     assert.equal(requests.length,0);await local.close();
   });
   await check('Choose a photo opens the file picker and produces a JPEG for Scan',async()=>{
-    await page.locator('#home').click();
+    await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page);
     await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
     assert.match(await page.locator('#captured-photo').getAttribute('src'),/^data:image\/jpeg;base64,/);
@@ -91,7 +108,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await context.close();
     context=await browser.newContext({serviceWorkers:'block',permissions:['camera'],viewport:{width:390,height:844}});
     await context.addInitScript(()=>{window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};});
-    page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+    page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(base);await page.locator('#practice').click();
     await page.locator('#grownups').click();await page.locator('#photo-consent').check();await page.locator('#parent-done').click();
     let uploads=0;
     for(const verdict of ['possible_wasp','no_wasp_visible','uncertain']){
@@ -99,7 +116,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
         const body=route.request().postDataJSON();assert.equal(body.consent,true);assert.match(body.image,/^data:image\/jpeg;base64,/);uploads++;
         await route.fulfill({json:{verdict,scope:'single_photo',distanceAvailable:false}});
       });
-      await page.locator('#home').click();
+      await page.locator('#home').click();await page.locator('#practice').click();
       if(verdict==='possible_wasp'){
         await page.locator('#enable-camera').click();
         await page.waitForFunction(()=>document.querySelector('#camera').videoWidth>0);
@@ -117,7 +134,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     assert.equal(uploads,3);
   });
   await check('A failed online scan produces no result',async()=>{
-    await page.locator('#home').click();
+    await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page);
     await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
     await context.setOffline(true);await page.locator('#check').click();

@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Wasp Buddy",
   "short_name": "Buzz",
-  "description": "A camera-first, on-device insect photo-check app. Not a safety detector.",
+  "description": "Learn with Buzz and check insect photos on your device. Not a safety detector.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

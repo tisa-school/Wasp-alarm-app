@@ -2,7 +2,7 @@
 
 [Open the app](https://tisa-school.github.io/Wasp-alarm-app/)
 
-A mobile-friendly, camera-first app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, and a sound test. It opens directly on the real camera screen; there are no pretend alert or game screens.
+A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, and a sound test. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, and an **Open camera** button. Home and Back to Buzz return to this first screen. Photo checks retain the later recognition safeguards; there are no pretend alert buttons.
 
 ## Use it
 

@@ -34,7 +34,7 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     };
   });
   const page=await context.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(base);
+  await page.goto(base);await page.locator('#practice').click();
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   assert.equal(await page.locator('#camera-screen').isVisible(),true);assert.equal(await page.locator('#check').textContent(),'SCAN');
@@ -64,7 +64,7 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   ];
   let waspsDetected=0;
   for(const [file,expected] of cases){
-    await page.locator('#home').click();
+    await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page,path.join(fixtures,file));
     await scan(page);const title=await page.locator('#result-title').textContent();assert.match(title,expected);
     assert.equal(await page.locator('#result-photo').isVisible(),true);
@@ -76,11 +76,11 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   console.log(`Real model sample outcome: ${waspsDetected}/3 wasp photos identified; bee guesses also suppressed. Remaining cases are uncertain, not an all clear.`);
   assert.equal(apiRequests,0);assert.equal(uploads,0);
   await context.setOffline(true);await page.reload();
-  await page.locator('#home').click();await choosePhoto(page,path.join(fixtures,'natural-wasps-1.jpg'));
+  await page.locator('#home').click();await page.locator('#practice').click();await choosePhoto(page,path.join(fixtures,'natural-wasps-1.jpg'));
   await scan(page);assert.match(await page.locator('#result-title').textContent(),/I’M NOTSURE/);await context.setOffline(false);
   console.log('PASS Actual model inference works offline after its first download, with zero photo uploads or API calls.');
   const failureContext=await browser.newContext({serviceWorkers:'block'});const failure=await failureContext.newPage();
-  await failure.route('**/models/insects.tflite',route=>route.abort());await failure.goto(base);
+  await failure.route('**/models/insects.tflite',route=>route.abort());await failure.goto(base);await failure.locator('#practice').click();
   await choosePhoto(failure,path.join(fixtures,'natural-wasps-1.jpg'));
   await failure.locator('#check').click();await failure.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('Could not check'));
   assert.equal(await failure.locator('#result-screen').isVisible(),false);assert.equal(await failure.locator('#check').isEnabled(),true);

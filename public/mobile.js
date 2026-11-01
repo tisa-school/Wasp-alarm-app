@@ -9,7 +9,7 @@
   const sounds = new window.BuzzSound();
   let stream;
   let recognition;
-  let screen = 'camera';
+  let screen = 'buzz';
   let cameraPending = false;
   let cameraGeneration = 0;
   let installPrompt;
@@ -86,7 +86,7 @@
     speak('Hello! I am Buzz. Stay calm, and tell your grown-up.');
     $('#sound-status').textContent=started ? 'Listen for three notes and Buzz’s voice. If silent, check device volume, silent mode, and browser sound settings.' : 'This browser could not start sound. Check its sound permissions and try again.';
   });
-  $('#home').addEventListener('click',() => show('camera'));
+  $('#home').addEventListener('click',() => show('buzz'));
   for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click',() => show(button.dataset.go));
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
