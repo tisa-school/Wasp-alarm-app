@@ -27,3 +27,16 @@ test('Missing, invalid, or weak scores never produce an all-clear result',()=>{
     assert.equal(result.label,undefined);
   }
 });
+
+test('A species guess needs separate general-image insect evidence',async()=>{
+  const {guardedPhotoResult}=await import('../public/insect-classifier.mjs');
+  const wasp=[{label:'Vespula vulgaris',score:.9}];
+  for(const scene of [[],[{index:286,score:.99}],[{index:310,score:.5}],[{index:310,score:.9},{index:310,score:.9}],[{index:310,score:NaN}]]){
+    const result=guardedPhotoResult(wasp,scene);
+    assert.equal(result.verdict,'uncertain');assert.equal(result.reason,'insect_not_confirmed');
+  }
+  assert.equal(guardedPhotoResult(wasp,[{index:310,score:.9}]).verdict,'possible_wasp');
+  assert.equal(guardedPhotoResult([{label:'Apis mellifera',score:.9}],[{index:310,score:.9}]).verdict,'possible_bee');
+  const weak=guardedPhotoResult([{label:'Vespula vulgaris',score:.2}],[{index:310,score:.9}]);
+  assert.equal(weak.verdict,'uncertain');assert.equal(weak.reason,'species_uncertain');
+});

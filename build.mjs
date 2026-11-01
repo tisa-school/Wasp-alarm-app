@@ -35,4 +35,4 @@ let webHtml=await readFile(path.join(output,'web/index.html'),'utf8');
 webHtml=webHtml.replace(/(src|href)="(mobile.css|mobile.js|audio.js|runtime-config.js)"/g,(_,attribute,file)=>`${attribute}="${file}?v=${release}"`);
 await writeFile(path.join(output,'web/index.html'),webHtml);
 const worker=await readFile(path.join(output,'web/sw.js'),'utf8');
-await writeFile(path.join(output,'web/sw.js'),worker.replace('wasp-buddy-v5','wasp-buddy-'+release));
+await writeFile(path.join(output,'web/sw.js'),worker.replace(/wasp-buddy-v\d+/, 'wasp-buddy-'+release));

@@ -8,25 +8,36 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 
 1. Open camera → **Use device camera** (or **Turn camera on**). Allow camera access. This opens a webcam on a computer or the device camera on a phone. Stop camera releases it.
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
-3. Tap **SCAN** to check one captured frame or selected photo. The first scan downloads about 18 MB of model/runtime assets from this same website. Subsequent scans reuse them, including offline after a completed first download.
-4. Possible wasp and bee matches show an alert and sound when enabled. Other or weak results say **I'm not sure**. Keep a grown-up nearby.
+3. Tap **SCAN** to check one captured frame or selected photo. The first scan downloads two models and the needed browser runtime assets from this same website. Subsequent scans reuse them, including offline after a completed first download.
+4. Possible wasp and bee matches show an alert and sound when enabled. Other or weak results explain uncertainty or say **Insect not confirmed**. Keep a grown-up nearby.
 5. The speaker button mutes/unmutes sound; unmuting plays a confirmation chime. **Grown-ups → Test sound** plays three notes and requests Buzz's voice. Check device volume, silent mode, and browser sound settings if silent.
 
 ## What recognition means
 
-The local model only distinguishes insect species. It can confidently mistake a
-person or another unfamiliar object for a wasp. Its scores do not verify that an
-insect is present. Local scans therefore return “I’m not sure” and do not trigger
-wasp/bee alerts. Species inference remains available internally, but automatic
-alerts need an independently validated insect-presence detector before they can
-be enabled again. This is a mitigation, not a working person detector or a
-proximity alarm. No one-metre distance or all-clear claim is supported.
+Photo identification is experimental and uses two local models. A general-image
+MobileNet model must put strong evidence on insect classes before the separate
+iNaturalist species model can return **Possible wasp** or **Possible bee**.
+Otherwise, the result explains **Insect not confirmed** or an uncertain species
+match. A portrait is not a suitable insect photo; the app does not identify people.
+
+This replaces the previous unconditional “I’m not sure” fallback without trusting
+an insect-only model on every image. Both models can still be wrong. This is not
+a validated insect-presence detector, a proximity alarm, or a safety assessment.
+Never move closer to an insect to improve a photo. No distance or all-clear claim
+is supported.
+
+The fixed browser regression set currently identifies 1 of 3 wasp photos and both
+bee photos, rejects the cat and portrait, and leaves the dragonfly unidentified.
+These are regression checks, not an estimate of real-world accuracy. Reliable
+field detection still needs a larger, independent validation dataset.
 
 ## Sound and camera
 
 The real-camera button uses `getUserMedia` after a tap. Live video requires HTTPS or localhost, permission, and an available camera. Open the app directly in a browser rather than an embedded web preview. If permission was denied, change it in the browser's site settings. Image selection remains available when the camera is unavailable.
 
 Audio is initialized during a button tap before asynchronous photo analysis. Muting stops active tones and speech, and the preference persists. Speech depends on the device/browser's available English voices; the chime does not require speech synthesis. A silent output device cannot be diagnosed remotely. Automated tests measure generated Web Audio signals, not physical speaker output.
+
+Voice questions: a grown-up must opt in, then tap the microphone again. Ask in English. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. The browser’s speech service may need internet access. It is not a wasp-buzzing detector. Physical microphone and speaker behavior still require device checks.
 
 ## Privacy
 

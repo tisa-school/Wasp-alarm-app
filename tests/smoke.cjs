@@ -141,5 +141,52 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('No result was made'));
     assert.equal(await page.locator('#result-screen').isVisible(),false);assert.equal(await page.locator('#check').isEnabled(),true);await context.setOffline(false);
   });
+  await check('Voice questions show transcripts, release listening, and explain browser failures (stubbed speech service)',async()=>{
+    const voiceContext=await browser.newContext({serviceWorkers:'block'});
+    await voiceContext.addInitScript(()=>{
+      localStorage.setItem('buzz-voice-allowed','yes');
+      window.__voiceStarts=0;window.__voiceAborts=0;window.__spoken=[];window.__cancelCount=0;
+      class FakeRecognition{
+        constructor(){window.__voice=this;}
+        start(){window.__voiceStarts++;this.onstart?.();}
+        abort(){window.__voiceAborts++;}
+      }
+      window.SpeechRecognition=FakeRecognition;
+      Object.defineProperty(window,'SpeechSynthesisUtterance',{value:class{constructor(text){this.text=text;}}});
+      Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],resume(){},cancel(){window.__cancelCount++;},speak(message){window.__spoken.push(message.text);window.__lastUtterance=message;}}});
+    });
+    try{
+      const voicePage=await voiceContext.newPage();voicePage.on('pageerror',error=>errors.push(error.message));await voicePage.goto(base);
+      await voicePage.locator('#read').click();
+      const cancellations=await voicePage.evaluate(()=>window.__cancelCount);
+      await voicePage.locator('#microphone').click();
+      assert.match(await voicePage.locator('#voice-status').textContent(),/Listening/);
+      assert.ok(await voicePage.evaluate(()=>window.__cancelCount)>cancellations,'Listening stops Buzz playback');
+      await voicePage.evaluate(()=>window.__voice.onresult({results:[[{transcript:'I got stung'}]]}));
+      assert.match(await voicePage.locator('#speech').textContent(),/Tell your grown-up straight away/);
+      assert.match(await voicePage.locator('#voice-status').textContent(),/Buzz heard: “I got stung”/);
+      assert.equal(await voicePage.locator('#microphone').getAttribute('aria-label'),'Ask Buzz a question using your microphone');
+      for(const [error,expected] of [['not-allowed',/site settings/],['no-speech',/No speech/],['audio-capture',/No microphone/],['network',/internet connection/]]){
+        await voicePage.locator('#microphone').click();
+        await voicePage.evaluate(error=>window.__voice.onerror({error}),error);
+        assert.match(await voicePage.locator('#voice-status').textContent(),expected);
+        assert.equal(await voicePage.locator('#microphone').evaluate(el=>el.classList.contains('listening')),false);
+      }
+      await voicePage.locator('#microphone').click();await voicePage.evaluate(()=>window.__voice.onend());
+      assert.match(await voicePage.locator('#voice-status').textContent(),/No question was heard/);
+      await voicePage.clock.install();
+      await voicePage.locator('#microphone').click();await voicePage.clock.fastForward(15_001);
+      assert.match(await voicePage.locator('#voice-status').textContent(),/No question was heard/);
+      assert.equal(await voicePage.locator('#microphone').evaluate(el=>el.classList.contains('listening')),false);
+      await voicePage.clock.resume();
+      await voicePage.locator('#microphone').click();await voicePage.locator('#practice').click();
+      assert.equal(await voicePage.evaluate(()=>window.__voice.onresult),null,'Leaving Buzz detaches recognition callbacks');
+      await voicePage.locator('#home').click();await voicePage.locator('#read').click();
+      await voicePage.evaluate(()=>window.__lastUtterance.onerror({error:'synthesis-failed'}));
+      assert.match(await voicePage.locator('#voice-status').textContent(),/voice could not play/);
+      await voicePage.evaluate(()=>{window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined;});
+      await voicePage.locator('#microphone').click();assert.match(await voicePage.locator('#voice-status').textContent(),/browser cannot understand/);
+    }finally{await voiceContext.close();}
+  });
   assert.deepEqual(errors,[]);console.log(`${checks} functional checks passed; no browser JavaScript errors.`);
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();server.kill('SIGTERM');});

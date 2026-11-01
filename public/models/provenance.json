@@ -13,5 +13,15 @@
     "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/LICENSE",
     "sha256": "f9946796a8a5bd5981565142fa42e3b0cc36aef6f80e86beaf5905b3c0fef1b5",
     "bytes": 11361
+  },
+  "scene.tflite": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/mobilenet_v2_1.0_224_quant.tflite",
+    "sha256": "7aad0c74c5e3c06e5eb3c827e13304fdd68a83da6087d92ee169c24ff9fd4776",
+    "bytes": 3610798
+  },
+  "scene-labels.txt": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/imagenet_labels.txt",
+    "sha256": "b8aaeb5630c62626a7d124a05c0e14230a7ffdd2136a31d0190a4fb71c1d82f1",
+    "bytes": 21686
   }
 }

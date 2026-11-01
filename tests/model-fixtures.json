@@ -26,5 +26,9 @@
   "cat.bmp": {
     "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/cat.bmp",
     "sha256": "34f235786382686111728287fd26d4c24dd8c25de8233469d6eeb301888ce0a9"
+  },
+  "person.bmp": {
+    "source": "https://raw.githubusercontent.com/google-coral/test_data/104342d2d3480b3e66203073dac24f4e2dbb4c41/grace_hopper.bmp",
+    "sha256": "c43444bf3b1b1e3080551ca194bd231da4b67f20fc91454502915a6b806b614f"
   }
 }

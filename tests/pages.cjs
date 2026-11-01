@@ -54,13 +54,14 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');
   console.log('PASS Sound test generates audio; mute silences the graph; enabling sound plays a confirmation chime.');
   const cases=[
-    ['natural-wasps-1.jpg',/I’M NOTSURE/],
-    ['natural-wasps-2.jpg',/I’M NOTSURE/],
-    ['natural-wasps-3.jpg',/I’M NOTSURE/],
-    ['natural-bees-1.jpg',/I’M NOTSURE/],
-    ['natural-bees-2.jpg',/I’M NOTSURE/],
+    ['natural-wasps-1.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
+    ['natural-wasps-2.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
+    ['natural-wasps-3.jpg',/POSSIBLEWASP/],
+    ['natural-bees-1.jpg',/POSSIBLEBEE/],
+    ['natural-bees-2.jpg',/POSSIBLEBEE/],
     ['dragonfly.bmp',/I’M NOTSURE/],
-    ['cat.bmp',/I’M NOTSURE/]
+    ['cat.bmp',/INSECT NOTCONFIRMED/],
+    ['person.bmp',/INSECT NOTCONFIRMED/]
   ];
   let waspsDetected=0;
   for(const [file,expected] of cases){
@@ -73,11 +74,20 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     if(file==='natural-wasps-2.jpg' && title==='I’M NOTSURE')console.log('KNOWN LIMITATION: wasp sample 2 remains uncertain.');
     else console.log('PASS Real model:',file,'→',title);
   }
-  console.log(`Real model sample outcome: ${waspsDetected}/3 wasp photos identified; bee guesses also suppressed. Remaining cases are uncertain, not an all clear.`);
+  console.log(`Real model sample outcome: ${waspsDetected}/3 wasp photos identified; two bee photos must be identified, and portrait/cat photos rejected. Uncertain results are not an all clear.`);
+  for(const fill of ['white','black']){
+    const result=await page.evaluate(async fill=>{
+      const canvas=document.createElement('canvas');canvas.width=224;canvas.height=224;
+      const context=canvas.getContext('2d');context.fillStyle=fill;context.fillRect(0,0,224,224);
+      const {classifyPhoto}=await import('./insect-classifier.mjs');return classifyPhoto(canvas.toDataURL('image/jpeg'));
+    },fill);
+    assert.equal(result.verdict,'uncertain','Blank images must never trigger insect alerts');
+  }
+  console.log('PASS Blank black and white images cannot trigger alerts.');
   assert.equal(apiRequests,0);assert.equal(uploads,0);
   await context.setOffline(true);await page.reload();
-  await page.locator('#home').click();await page.locator('#practice').click();await choosePhoto(page,path.join(fixtures,'natural-wasps-1.jpg'));
-  await scan(page);assert.match(await page.locator('#result-title').textContent(),/I’M NOTSURE/);await context.setOffline(false);
+  await page.locator('#home').click();await page.locator('#practice').click();await choosePhoto(page,path.join(fixtures,'natural-wasps-3.jpg'));
+  await scan(page);assert.match(await page.locator('#result-title').textContent(),/POSSIBLEWASP/);await context.setOffline(false);
   console.log('PASS Actual model inference works offline after its first download, with zero photo uploads or API calls.');
   const failureContext=await browser.newContext({serviceWorkers:'block'});const failure=await failureContext.newPage();
   await failure.route('**/models/insects.tflite',route=>route.abort());await failure.goto(base);await failure.locator('#practice').click();
@@ -85,5 +95,14 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   await failure.locator('#check').click();await failure.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('Could not check'));
   assert.equal(await failure.locator('#result-screen').isVisible(),false);assert.equal(await failure.locator('#check').isEnabled(),true);
   console.log('PASS Model download failures show an error and never fabricate a detection.');
-  await failureContext.close();assert.deepEqual(errors,[]);
+  await failureContext.close();
+  const corruptContext=await browser.newContext({serviceWorkers:'block'});
+  try{
+    const corrupt=await corruptContext.newPage();await corrupt.route('**/models/scene.tflite',route=>route.fulfill({body:'not a verified model'}));
+    await corrupt.goto(base);await corrupt.locator('#practice').click();await choosePhoto(corrupt,path.join(fixtures,'natural-wasps-3.jpg'));
+    await corrupt.locator('#check').click();await corrupt.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('Could not check'));
+    assert.equal(await corrupt.locator('#result-screen').isVisible(),false);assert.equal(await corrupt.locator('#check').isEnabled(),true);
+    console.log('PASS A corrupted scene model fails checksum verification and cannot produce a result.');
+  }finally{await corruptContext.close();}
+  assert.deepEqual(errors,[]);
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});

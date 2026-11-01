@@ -9,6 +9,7 @@
   const sounds = new window.BuzzSound();
   let stream;
   let recognition;
+  let listeningTimer;
   let screen = 'buzz';
   let cameraPending = false;
   let cameraGeneration = 0;
@@ -37,10 +38,19 @@
   // attempts when restoring an enabled preference at page load.
   if(!soundOn)syncSound();
   function speak(text) {
-    if(soundOn)sounds.speak(text);
+    if(soundOn)sounds.speak(text,{onError:message=>{
+      $('#voice-status').textContent=message;
+      if($('#parent-dialog').open)$('#sound-status').textContent=message;
+    }});
   }
   function stopListening() {
-    if (recognition) { recognition.onend = null; recognition.onerror = null; recognition.onresult = null; recognition.abort(); recognition = undefined; }
+    clearTimeout(listeningTimer);
+    if (recognition) {
+      const current=recognition;recognition=undefined;
+      current.onstart=null;current.onend=null;current.onerror=null;current.onresult=null;
+      try{current.abort();}catch{ /* Already stopped by the browser. */ }
+      if(/^(Listening|Starting microphone)/.test($('#voice-status').textContent))$('#voice-status').textContent='Voice stopped. Tap the mic to ask again.';
+    }
     $('#microphone').classList.remove('listening');
     $('#microphone').setAttribute('aria-label', 'Ask Buzz a question using your microphone');
   }
@@ -74,7 +84,7 @@
     if (/space|near|wasp|walk|safe/.test(text)) return 'Give wasps lots of space! Keep your hands still, walk away slowly, and tell your grown-up. One big grown-up step is a good way to practise making space.';
     return 'I know a few things about wasps, bees, and staying calm. Try asking: why do wasps need space? You can also tap a picture question!';
   }
-  function tellBuzz(question) { $('#speech').textContent = answer(question); speak($('#speech').textContent); }
+  function tellBuzz(question) { stopListening(); $('#speech').textContent = answer(question); speak($('#speech').textContent); }
   $('#sound').addEventListener('click', () => {
     soundOn = !soundOn;
     syncSound();
@@ -90,7 +100,7 @@
   for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click',() => show(button.dataset.go));
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
-  $('#read').addEventListener('click',() => speak($('#speech').textContent));
+  $('#read').addEventListener('click',() => {stopListening();speak($('#speech').textContent);});
   $('#listen').addEventListener('click',() => {
     const guidance = photoChecksEnabled ? 'Point your camera, then tap Scan to check one photo. If you see a wasp, keep your hands still, walk away slowly, and tell a grown-up. A photo check can miss a wasp.' : 'Point your camera and tap Photo to take a picture. This camera does not recognise wasps. If you see a wasp, walk away slowly and tell a grown-up.';
     $('#camera-status').textContent = guidance;
@@ -148,17 +158,52 @@
   $('#voice-consent').addEventListener('change',event => { voiceAllowed=event.target.checked;save('buzz-voice-allowed',voiceAllowed ? 'yes' : 'no');if(!voiceAllowed)stopListening(); });
   $('#microphone').addEventListener('click',() => {
     if (recognition) { stopListening(); $('#voice-status').textContent='Voice stopped. You can pick a picture question.'; return; }
-    if (!voiceAllowed) { $('#voice-status').textContent='Ask your grown-up to allow voice questions first.';dialog.showModal();return; }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { $('#voice-status').textContent='Voice questions are not supported here. Tap a picture question instead.';return; }
-    window.speechSynthesis?.cancel();
-    const current = new SpeechRecognition();recognition = current;
+    if (!SpeechRecognition) { $('#voice-status').textContent='This browser cannot understand voice questions. Try Safari or Chrome, or tap a picture question.';return; }
+    if(!window.isSecureContext){$('#voice-status').textContent='Microphone questions need the secure HTTPS website. You can still tap a picture question.';return;}
+    if (!voiceAllowed) { $('#voice-status').textContent='Ask your grown-up to allow voice questions, then tap the mic again.';dialog.showModal();return; }
+    // Stop all output before opening the microphone so Buzz cannot hear itself.
+    sounds.stop();
+    let current;
+    try{current=new SpeechRecognition();}catch{$('#voice-status').textContent='Voice questions could not start in this browser. Tap a picture question.';return;}
+    recognition=current;
     current.lang='en-GB';current.interimResults=false;current.maxAlternatives=1;current.continuous=false;
-    current.onresult = event => { const transcript=event.results[0]?.[0]?.transcript;if(transcript){tellBuzz(transcript);$('#voice-status').textContent='Buzz heard your question.';} };
-    current.onerror = () => { $('#voice-status').textContent='Could not hear a question. Try a picture button, or ask your grown-up.'; };
-    current.onend = () => { if(recognition===current){recognition=undefined;$('#microphone').classList.remove('listening');$('#microphone').setAttribute('aria-label','Ask Buzz a question using your microphone');if($('#voice-status').textContent.startsWith('Listening'))$('#voice-status').textContent='Try again, or pick a picture question.';} };
-    try { current.start();$('#microphone').classList.add('listening');$('#microphone').setAttribute('aria-label','Stop listening');$('#voice-status').textContent='Listening… tap the mic to stop.'; }
-    catch { stopListening();$('#voice-status').textContent='Microphone unavailable. Tap a picture question instead.'; }
+    const finish=message=>{
+      if(recognition!==current)return;
+      stopListening();$('#voice-status').textContent=message;
+    };
+    const timeout=()=>finish('No question was heard. Tap the mic to try again, or pick a picture question.');
+    current.onstart=()=>{
+      if(recognition!==current)return;
+      clearTimeout(listeningTimer);listeningTimer=setTimeout(timeout,15_000);
+      $('#voice-status').textContent='Listening… ask in English. Tap the mic to stop.';
+    };
+    current.onresult=event=>{
+      if(recognition!==current)return;
+      const transcript=event.results?.[0]?.[0]?.transcript?.trim();
+      if(!transcript){finish('No words were heard. Tap the mic to try again, or pick a picture question.');return;}
+      stopListening();
+      $('#voice-status').textContent='Buzz heard: “'+transcript.slice(0,200)+'”';
+      tellBuzz(transcript);
+    };
+    current.onerror=event=>{
+      const messages={
+        'not-allowed':'Microphone access was blocked. Ask your grown-up to allow the microphone in this browser’s site settings, then try again.',
+        'service-not-allowed':'The browser’s speech service is blocked. Ask your grown-up to check browser settings, or tap a picture question.',
+        'audio-capture':'No microphone is available. Check that it is connected and another app is not using it.',
+        'no-speech':'No speech was heard. Tap the mic and ask in English, or pick a picture question.',
+        network:'The browser’s speech service could not connect. Check your internet connection, or tap a picture question.',
+        'language-not-supported':'English voice recognition is unavailable in this browser. Tap a picture question.',
+        aborted:'Voice stopped. Tap the mic to try again.'
+      };
+      finish(messages[event.error]||'Voice recognition failed. Tap the mic to try again, or pick a picture question.');
+    };
+    current.onend=()=>finish('No question was heard. Tap the mic to try again, or pick a picture question.');
+    $('#microphone').classList.add('listening');$('#microphone').setAttribute('aria-label','Stop listening');
+    $('#voice-status').textContent='Starting microphone… allow access if your browser asks.';
+    listeningTimer=setTimeout(timeout,15_000);
+    try{current.start();}
+    catch(error){finish(error.name==='NotAllowedError'?'Microphone access was blocked. Ask your grown-up to allow it in this browser’s site settings.':'Microphone unavailable. Tap the mic to try again, or pick a picture question.');}
   });
   window.addEventListener('beforeinstallprompt',event => { event.preventDefault();installPrompt=event;$('#install').hidden=false; });
   $('#install').addEventListener('click',async () => {
@@ -192,7 +237,7 @@
     finally{URL.revokeObjectURL(url);}
   });
   function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;}
-  function photoResult(verdict,photo){
+  function photoResult(verdict,photo,reason){
     show('result');$('#result-screen').classList.add('photo-result');
     $('#result-badge').textContent='ONE PHOTO · NOT A SAFETY GUARANTEE';
     $('#result-photo').src=photo;$('#result-photo').hidden=false;$('#result-wasp').hidden=true;$('#result-sun').hidden=true;
@@ -203,7 +248,9 @@
       uncertain:{title:'I’M NOT<br>SURE',message:'Ask your grown-up to look. Keep your distance.',symbol:'?',voice:'I am not sure about this photo. Keep your distance and ask your grown-up to look.'}
     };
     const warning=verdict==='possible_wasp'||verdict==='possible_bee';
-    const outcome=outcomes[verdict];app.classList.add(warning?'alert-state':'photo-neutral');
+    const outcome={...outcomes[verdict]};
+    if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'INSECT NOT<br>CONFIRMED',message:'Buzz could not confirm an insect in this photo. Try an existing insect photo with your grown-up.',voice:'I could not confirm an insect in this photo. Ask your grown-up to help. This does not mean the area is safe.'});
+    if(reason==='species_uncertain')Object.assign(outcome,{message:'The models could not agree on a wasp or bee. Try a clearer existing photo. Do not move closer to an insect.'});app.classList.add(warning?'alert-state':'photo-neutral');
     $('#result-title').innerHTML=outcome.title;$('#result-message').textContent=outcome.message;$('#result-sticker').textContent=outcome.symbol;
     $('#acknowledge').textContent='Got it!';$('#result-screen .result-note').textContent='A photo check can miss insects. It cannot measure distance or confirm safety.';
     practiceHistory.unshift({clear:false,time:Date.now(),verdict});practiceHistory=practiceHistory.slice(0,20);save('buzz-practice',JSON.stringify(practiceHistory));
@@ -235,7 +282,7 @@
         const {classifyPhoto}=await import('./insect-classifier.mjs');
         const body=await classifyPhoto(photo,{signal:current.signal,onProgress:message=>{if(generation===scanGeneration && screen==='camera')$('#camera-status').textContent=message;}});
         if(generation!==scanGeneration || screen!=='camera' || current.signal.aborted)return;
-        photoResult(body.verdict,photo);return;
+        photoResult(body.verdict,photo,body.reason);return;
       }
       const response=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photo,consent:true}),signal:current.signal});
       const body=await response.json();
@@ -259,8 +306,8 @@
     $('#photo-consent').closest('label').hidden=true;
   }else if(localRecognition){
     $('#photo-consent').closest('label').hidden=true;
-    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first scan downloads the insect model and browser runtime from this website; later scans reuse them. It can mistake other objects for insects or fail to identify a wasp. A clear insect photo works best; do not approach an insect to take one.';
-    $('#service-status').textContent='On-device photo recognition is enabled. No API key is needed. It is not a safety detector and cannot measure distance.';
+    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first scan downloads two image models and the browser runtime from this website; later scans reuse them. It can mistake other objects for insects or fail to identify a wasp. A clear insect photo works best; do not approach an insect to take one.';
+    $('#service-status').textContent='Experimental on-device photo identification uses two models. They can still be wrong. No API key is needed. It cannot confirm safety or measure distance.';
     $('#camera-screen .practice-badge').textContent='ON-DEVICE PHOTO CHECK · CAN BE WRONG';
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});
   function pause(){cancelScan();stopListening();stopCamera();sounds.stop();navigator.vibrate?.(0);}
