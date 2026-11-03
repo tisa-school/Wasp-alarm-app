@@ -52,7 +52,12 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   assert.ok(await audioPeak(page,100)<.0001,'Mute must silence the audio graph');
   await page.locator('#sound').click();
   assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');
-  console.log('PASS Sound test generates audio; mute silences the graph; enabling sound plays a confirmation chime.');
+  await page.waitForTimeout(900);
+  await page.evaluate(()=>{const button=document.createElement('button');button.id='tap-sound-test';button.textContent='Tap sound test';document.body.append(button);});
+  const tapPeak=audioPeak(page,180);await page.locator('#tap-sound-test').click();
+  assert.ok(await tapPeak>.005,'A normal button tap must generate an audible waveform');
+  await page.locator('#tap-sound-test').evaluate(element=>element.remove());
+  console.log('PASS Sound test generates audio; mute silences the graph; enabling sound and normal button taps produce audio.');
   const cases=[
     ['natural-wasps-1.jpg',/NO WASPRESULT|I’M NOTSURE/],
     ['natural-wasps-2.jpg',/NO WASPRESULT|I’M NOTSURE/],
