@@ -47,8 +47,10 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   await page.locator('#grownups').click();await page.locator('#test-sound').click();
   await page.evaluate(()=>{const context=window.__audioContexts[0];window.__meter=context.createAnalyser();window.__meter.fftSize=2048;context.masterForTest.connect(window.__meter);});
   assert.ok(await audioPeak(page)>.005,'Sound test must generate an actual nonzero audio waveform');
-  await page.locator('#parent-done').click();await page.locator('#sound').click();
-  await page.waitForTimeout(150);assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'false');
+  await page.locator('#parent-done').click();
+  const mutePeak=audioPeak(page,300);await page.locator('#sound').click();
+  assert.ok(await mutePeak>.005,'The sound button must play a confirmation tone when muting');
+  await page.waitForTimeout(200);assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'false');
   assert.ok(await audioPeak(page,100)<.0001,'Mute must silence the audio graph');
   await page.locator('#sound').click();
   assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');

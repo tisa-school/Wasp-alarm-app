@@ -10,6 +10,7 @@
   let stream;
   let recognition;
   let listeningTimer;
+  let muteTimer;
   let screen = 'buzz';
   let cameraPending = false;
   let cameraGeneration = 0;
@@ -28,8 +29,8 @@
     if (Array.isArray(saved)) practiceHistory = saved.filter(item => item && typeof item.clear === 'boolean' && Number.isFinite(item.time)).slice(0,20);
   } catch { /* Private browsing can disable storage. The app still works. */ }
   function save(key, value) { try { localStorage.setItem(key, value); } catch { /* Session-only fallback. */ } }
-  function syncSound() {
-    sounds.setEnabled(soundOn);
+  function syncSound(updateAudio=true) {
+    if(updateAudio)sounds.setEnabled(soundOn);
     $('#sound').setAttribute('aria-pressed',String(soundOn));
     $('#sound').setAttribute('aria-label',soundOn ? 'Mute voice and sounds' : 'Turn voice and sounds on');
     $('#sound').classList.toggle('sound-off',!soundOn);
@@ -97,9 +98,13 @@
   }
   function tellBuzz(question) { stopListening(); $('#speech').textContent = answer(question); speak($('#speech').textContent); }
   $('#sound').addEventListener('click', () => {
-    soundOn = !soundOn;
-    syncSound();
-    if(soundOn)chime();
+    clearTimeout(muteTimer);
+    if(soundOn){
+      sounds.stop();sounds.muteChime();soundOn=false;syncSound(false);
+      muteTimer=setTimeout(()=>{if(!soundOn)sounds.setEnabled(false);},360);
+    }else{
+      soundOn=true;syncSound();chime();
+    }
   });
   $('#test-sound').addEventListener('click',()=>{
     soundOn=true;syncSound();

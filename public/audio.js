@@ -39,6 +39,19 @@
       });
       return true;
     }
+    muteChime(){
+      if(!this.unlock())return false;
+      const context=this.context;
+      [520,330].forEach((frequency,index)=>{
+        const oscillator=context.createOscillator(),gain=context.createGain(),at=context.currentTime+index*.11;
+        oscillator.type='sine';oscillator.frequency.value=frequency;
+        gain.gain.setValueAtTime(.001,at);gain.gain.exponentialRampToValueAtTime(.12,at+.015);gain.gain.exponentialRampToValueAtTime(.001,at+.14);
+        oscillator.connect(gain);gain.connect(this.master);this.nodes.add(oscillator);
+        oscillator.onended=()=>{this.nodes.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+        oscillator.start(at);oscillator.stop(at+.16);
+      });
+      return true;
+    }
     tap(){
       if(!this.unlock())return false;
       const context=this.context,oscillator=context.createOscillator(),gain=context.createGain(),at=context.currentTime;
