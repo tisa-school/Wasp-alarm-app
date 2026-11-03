@@ -98,6 +98,17 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await file.locator('#focus-apply').click();assert.match(await file.locator('#camera-status').textContent(),/Selected area ready/);
     assert.equal(requests.length,0);await local.close();
   });
+  await check('Sound checker reports only generic buzzing and never claims a wasp from audio',async()=>{
+    const soundContext=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});
+    const soundPage=await soundContext.newPage();soundPage.on('pageerror',error=>errors.push(error.message));
+    await soundPage.route('**/buzz-sound-detector.mjs',route=>route.fulfill({contentType:'text/javascript',body:"export async function listenForBuzz({onProgress}){onProgress?.(1);return {verdict:'possible_buzz',frequency:190}}"}));
+    await soundPage.goto(base);await soundPage.locator('#listen-buzz').click();
+    assert.equal(await soundPage.locator('#buzzing-screen').isVisible(),true);
+    await soundPage.locator('#buzz-listen').click();await soundPage.waitForFunction(()=>document.querySelector('#buzzing-result').textContent==='BUZZING HEARD');
+    assert.match(await soundPage.locator('#buzzing-status').textContent(),/cannot confirm a wasp/i);
+    await soundPage.locator('#buzzing-screen [data-go="buzz"]').click();
+    assert.equal(await soundPage.locator('#buzz-screen').isVisible(),true);await soundContext.close();
+  });
   await check('Choose a photo opens the file picker and produces a JPEG for Scan',async()=>{
     await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page);

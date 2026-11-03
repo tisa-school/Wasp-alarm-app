@@ -21,6 +21,8 @@
   let selectedPhotoFocused = false;
   let scanController;
   let scanGeneration = 0;
+  let buzzController;
+  let buzzGeneration = 0;
   let practiceHistory = [];
   try { voiceAllowed = localStorage.getItem('buzz-voice-allowed') === 'yes';
     soundOn = localStorage.getItem('buzz-sound') !== 'off';
@@ -78,6 +80,7 @@
   }
   function show(next) {
     cancelScan();
+    if(next!=='buzzing')stopBuzzListening();
     stopListening(); sounds.stop(); navigator.vibrate?.(0);
     if (next !== 'camera') { stopCamera(); clearPhoto(); }
     if (next !== 'result') { $('#result-photo').hidden = true; $('#result-photo').removeAttribute('src'); }
@@ -87,6 +90,41 @@
     window.scrollTo({top:0,behavior:'instant'});
     const heading = $(`#${next}-screen h1`);
     heading.setAttribute('tabindex','-1'); heading.focus({preventScroll:true});
+  }
+  function stopBuzzListening(message){
+    buzzGeneration++;buzzController?.abort();buzzController=undefined;
+    $('#sound-orb').classList.remove('is-listening');
+    $('#buzz-listen').disabled=false;$('#buzz-listen').textContent='START LISTENING';
+    if(message)$('#buzzing-status').textContent=message;
+  }
+  async function startBuzzListening(){
+    if(buzzController){stopBuzzListening('Listening stopped. Tap Start to try again.');return;}
+    if(!navigator.mediaDevices?.getUserMedia){$('#buzzing-status').textContent='This browser cannot use the microphone. Ask a grown-up to try Safari or Chrome.';return;}
+    stopListening();sounds.stop();
+    const current=new AbortController(),generation=++buzzGeneration;buzzController=current;
+    $('#buzzing-result').textContent='Listening…';$('#buzzing-status').textContent='Keep the device still. Do not move closer to the sound.';
+    $('#sound-orb').classList.add('is-listening');$('#buzz-listen').textContent='STOP LISTENING';
+    try{
+      const {listenForBuzz}=await import('./buzz-sound-detector.mjs');
+      const result=await listenForBuzz({signal:current.signal,onProgress:progress=>{
+        if(generation===buzzGeneration)$('#buzzing-status').textContent=`Listening… ${Math.max(1,Math.ceil((1-progress)*5))} seconds left. Do not move closer.`;
+      }});
+      if(generation!==buzzGeneration||screen!=='buzzing')return;
+      const outcomes={
+        possible_buzz:{title:'BUZZING HEARD',message:'A steady buzzing pattern was heard. It could be an insect, fan, toy, or something else. Sound cannot confirm a wasp. Ask a grown-up to look.'},
+        no_steady_buzz:{title:'NO STEADY BUZZ',message:'No steady buzzing pattern was heard. A wasp can be quiet, so this does not mean the area is safe.'},
+        too_quiet:{title:'TOO QUIET',message:'There was not enough sound to check. Do not move closer. Ask a grown-up to look.'},
+        uncertain:{title:'NOT SURE',message:'The sound changed too much to check. It cannot confirm a wasp. Ask a grown-up to look.'}
+      };
+      const outcome=outcomes[result.verdict]||outcomes.uncertain;
+      $('#buzzing-result').textContent=outcome.title;$('#buzzing-status').textContent=outcome.message;speak(outcome.title+'. '+outcome.message);
+    }catch(error){
+      if(generation!==buzzGeneration||error.name==='AbortError')return;
+      $('#buzzing-result').textContent='MICROPHONE NEEDED';
+      $('#buzzing-status').textContent=error.name==='NotAllowedError'?'Microphone permission was not given. Ask a grown-up to allow it in the browser’s site settings.':'The sound check could not start. Ask a grown-up to check the microphone and try again.';
+    }finally{
+      if(generation===buzzGeneration){buzzController=undefined;$('#sound-orb').classList.remove('is-listening');$('#buzz-listen').textContent='LISTEN AGAIN';}
+    }
   }
   function answer(question) {
     const text = question.toLowerCase();
@@ -119,6 +157,8 @@
   $('#home').addEventListener('click',() => show('buzz'));
   for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click',() => show(button.dataset.go));
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
+  $('#listen-buzz').addEventListener('click',()=>show('buzzing'));
+  $('#buzz-listen').addEventListener('click',startBuzzListening);
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
   $('#read').addEventListener('click',() => {stopListening();speak($('#speech').textContent);});
   $('#listen').addEventListener('click',() => {
@@ -394,7 +434,7 @@
     $('#service-status').textContent='Experimental on-device photo identification uses two models. They can still be wrong. No API key is needed. It cannot confirm safety or measure distance.';
     $('#camera-screen .practice-badge').textContent='ON-DEVICE PHOTO CHECK · CAN BE WRONG';
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});
-  function pause(){cancelScan();stopListening();stopCamera();sounds.stop();navigator.vibrate?.(0);}
+  function pause(){cancelScan();stopBuzzListening();stopListening();stopCamera();sounds.stop();navigator.vibrate?.(0);}
   window.addEventListener('pagehide',pause);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();else updateRadar();});
 })();

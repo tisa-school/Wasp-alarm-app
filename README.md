@@ -2,15 +2,16 @@
 
 [Open the app](https://tisa-school.github.io/Wasp-alarm-app/)
 
-A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, spoken guidance, large buttons, and a sound test. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, and an **Open camera** button. Home and Back to Buzz return to this first screen. Photo checks retain the later recognition safeguards; there are no pretend alert buttons.
+A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, a five-second buzzing-pattern checker, spoken guidance, large buttons, and sound controls. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, camera, and sound-checker buttons.
 
 ## Use it
 
 1. Open camera → **Use device camera** (or **Turn camera on**). Allow camera access. This opens a webcam on a computer or the device camera on a phone. Stop camera releases it.
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
 3. Tap **SCAN** to check one captured frame or selected photo. The first scan downloads two models and the needed browser runtime assets from this same website. Subsequent scans reuse them, including offline after a completed first download.
-4. Possible wasp and bee matches show an alert and sound when enabled. Other or weak results explain uncertainty or say **Insect not confirmed**. Keep a grown-up nearby.
-5. The speaker button mutes/unmutes sound; unmuting plays a confirmation chime. **Grown-ups → Test sound** plays three notes and requests Buzz's voice. Check device volume, silent mode, and browser sound settings if silent.
+4. A whole-photo insect candidate asks a grown-up to select the insect area before any possible-wasp or possible-bee result. Rejected portraits and objects say **No wasp result**. Keep a grown-up nearby.
+5. Tap **Listen for buzzing**, then **Start listening**, to analyze five seconds of microphone frequencies on the device. A steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
+6. The speaker button mutes/unmutes sound with audible confirmation tones. **Grown-ups → Test sound** plays three notes and requests Buzz's voice.
 
 If a photo contains a collage or screen borders, use **Focus on one insect**
 from the photo preview or result. Tap one insect in the stored photo, adjust
@@ -27,7 +28,7 @@ iNaturalist species model can return **Possible wasp** or **Possible bee**.
 If the whole photo is uncertain, Buzz checks six bounded detail crops. A crop
 must pass both models and agree with another crop or the whole-photo species
 guess; conflicting wasp/bee crop guesses remain uncertain. Otherwise, the result
-explains **Insect not confirmed** or an uncertain species match. A portrait is not a suitable insect photo; the app does not identify people.
+explains **No wasp result** or an uncertain species match. A portrait is not a suitable insect photo; the app does not identify people.
 
 This replaces the previous unconditional “I’m not sure” fallback without trusting
 an insect-only model on every image. Both models can still be wrong. This is not
@@ -54,13 +55,15 @@ The real-camera button uses `getUserMedia` after a tap. Live video requires HTTP
 
 Audio is initialized during a button tap before asynchronous photo analysis. Muting stops active tones and speech, and the preference persists. Speech depends on the device/browser's available English voices; the chime does not require speech synthesis. A silent output device cannot be diagnosed remotely. Automated tests measure generated Web Audio signals, not physical speaker output.
 
-Voice questions: a grown-up must opt in, then tap the microphone again. Ask in English. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. The browser’s speech service may need internet access. It is not a wasp-buzzing detector. Physical microphone and speaker behavior still require device checks.
+The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained narrow buzzing pattern but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
+
+Voice questions: a grown-up must opt in, then tap the question microphone again. Ask in English. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. The browser’s speech service may need internet access.
 
 ## Privacy
 
 Default photo recognition stays on the device. Camera frames and selected photos are not uploaded, recorded, or included in history. The camera stops on leaving its screen or hiding the app. Only up to 20 result labels/timestamps and preferences are kept in local storage, which can be cleared. The website downloads the model and runtime when first needed. The service worker caches assets, never camera images or API responses.
 
-Optional voice questions require grown-up opt-in and use the browser's speech service, which may send audio to its provider. Buzz answers a fixed set of safety topics, not unrestricted AI questions. Picture questions work without microphone access. No analytics or external fonts are loaded.
+The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions require grown-up opt-in and use the browser's speech service, which may send audio to its provider. Buzz answers a fixed set of safety topics, not unrestricted AI questions. No analytics or external fonts are loaded.
 
 ## Run locally
 
