@@ -133,8 +133,12 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       }
       await page.locator('#check').click();await page.waitForFunction(()=>!document.querySelector('#result-screen').hidden);
       assert.match(await page.locator('#result-badge').textContent(),/ONE PHOTO/);
-      const expected={possible_wasp:/POSSIBLEWASP/,no_wasp_visible:/NOTSPOTTED/,uncertain:/I’M NOTSURE/};
+      const expected={possible_wasp:/SELECT THEINSECT/,no_wasp_visible:/NOTSPOTTED/,uncertain:/I’M NOTSURE/};
       assert.match(await page.locator('#result-title').textContent(),expected[verdict]);
+      if(verdict==='possible_wasp'){
+        assert.match(await page.locator('#result-message').textContent(),/will not label a whole camera picture or a person/);
+        assert.equal(await page.locator('.app').evaluate(el=>el.classList.contains('alert-state')),false);
+      }
       assert.equal(await page.locator('.app').evaluate(el=>el.classList.contains('clear-state')),false);
       assert.equal(await page.locator('#result-photo').isVisible(),true);await page.unroute('**/api/scan');
     }
