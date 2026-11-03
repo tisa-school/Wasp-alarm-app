@@ -39,6 +39,16 @@
       });
       return true;
     }
+    tap(){
+      if(!this.unlock())return false;
+      const context=this.context,oscillator=context.createOscillator(),gain=context.createGain(),at=context.currentTime;
+      oscillator.type='sine';oscillator.frequency.setValueAtTime(420,at);oscillator.frequency.exponentialRampToValueAtTime(620,at+.07);
+      gain.gain.setValueAtTime(.07,at);gain.gain.exponentialRampToValueAtTime(.001,at+.09);
+      oscillator.connect(gain);gain.connect(this.master);this.nodes.add(oscillator);
+      oscillator.onended=()=>{this.nodes.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+      oscillator.start(at);oscillator.stop(at+.1);
+      return true;
+    }
     speak(text,{onError}={}){
       if(!this.enabled)return false;
       if(!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)){

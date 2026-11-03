@@ -107,6 +107,10 @@
     speak('Hello! I am Buzz. Stay calm, and tell your grown-up.');
     $('#sound-status').textContent=started ? 'Listen for three notes and Buzz’s voice. If silent, check device volume, silent mode, and browser sound settings.' : 'This browser could not start sound. Check its sound permissions and try again.';
   });
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('button');
+    if(button && !button.disabled && !['sound','test-sound'].includes(button.id))sounds.tap();
+  });
   $('#home').addEventListener('click',() => show('buzz'));
   for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click',() => show(button.dataset.go));
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
