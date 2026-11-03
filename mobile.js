@@ -319,10 +319,11 @@
     };
     const warning=verdict==='possible_wasp'||verdict==='possible_bee';
     const outcome={...outcomes[verdict]};
-    if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'INSECT NOT<br>CONFIRMED',message:'Buzz could not confirm an insect. Screen borders, small subjects, or blur can hide it. Try the original photo with your grown-up.',voice:'I could not confirm an insect in this photo. Ask your grown-up to help. This does not mean the area is safe.'});
+    if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'NO WASP<br>RESULT',message:'Buzz did not find enough evidence of an insect. A person is never a wasp, and this app does not say anyone is dangerous.',voice:'No wasp result. A person is never a wasp, and this app does not say anyone is dangerous.'});
     if(reason==='needs_insect_focus')Object.assign(outcome,{title:'SELECT THE<br>INSECT',message:'No wasp warning was made. Buzz will not label a whole camera picture or a person. Ask a grown-up to select only the insect.',voice:'No wasp warning was made. I will not label a whole camera picture or a person. Ask a grown-up to select only the insect.'});
     if(reason==='species_uncertain')Object.assign(outcome,{message:'The models could not agree on a wasp or bee. Try a clearer existing photo. Do not move closer to an insect.'});app.classList.add(warning?'alert-state':'photo-neutral');
     $('#result-title').innerHTML=outcome.title;$('#result-message').textContent=outcome.message;$('#result-sticker').textContent=outcome.symbol;
+    $('#focus-result').hidden=reason==='insect_not_confirmed';
     $('#acknowledge').textContent='Got it!';$('#result-screen .result-note').textContent='A photo check can miss insects. It cannot measure distance or confirm safety.';
     practiceHistory.unshift({clear:false,time:Date.now(),verdict});practiceHistory=practiceHistory.slice(0,20);save('buzz-practice',JSON.stringify(practiceHistory));
     if(warning){chime();navigator.vibrate?.([130,100,130]);}speak(outcome.voice);
