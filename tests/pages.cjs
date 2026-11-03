@@ -54,14 +54,14 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');
   console.log('PASS Sound test generates audio; mute silences the graph; enabling sound plays a confirmation chime.');
   const cases=[
-    ['natural-wasps-1.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
-    ['natural-wasps-2.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
+    ['natural-wasps-1.jpg',/NO WASPRESULT|I’M NOTSURE/],
+    ['natural-wasps-2.jpg',/NO WASPRESULT|I’M NOTSURE/],
     ['natural-wasps-3.jpg',/SELECT THEINSECT/],
     ['natural-bees-1.jpg',/SELECT THEINSECT/],
     ['natural-bees-2.jpg',/SELECT THEINSECT/],
     ['dragonfly.bmp',/I’M NOTSURE/],
-    ['cat.bmp',/INSECT NOTCONFIRMED/],
-    ['person.bmp',/INSECT NOTCONFIRMED/]
+    ['cat.bmp',/NO WASPRESULT/],
+    ['person.bmp',/NO WASPRESULT/]
   ];
   for(const [file,expected] of cases){
     await page.locator('#home').click();await page.locator('#practice').click();
@@ -69,6 +69,10 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     await scan(page);const title=await page.locator('#result-title').textContent();assert.match(title,expected);
     assert.equal(await page.locator('#result-photo').isVisible(),true);
     assert.match(await page.locator('#result-screen .result-note').textContent(),/cannot measure/);
+    if(file==='person.bmp'){
+      assert.match(await page.locator('#result-message').textContent(),/A person is never a wasp/);
+      assert.equal(await page.locator('#focus-result').isVisible(),false);
+    }
     if(file==='natural-wasps-2.jpg' && title==='I’M NOTSURE')console.log('KNOWN LIMITATION: wasp sample 2 remains uncertain.');
     else console.log('PASS Real model:',file,'→',title);
   }
