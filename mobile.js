@@ -302,8 +302,8 @@
     }catch{$('#focus-status').textContent='Could not use that selection. Keep the original photo and try again.';}
   });
   function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
-  function protectWholeCameraPhoto(result,wholeCameraPhoto){
-    if(wholeCameraPhoto && ['possible_wasp','possible_bee'].includes(result?.verdict))
+  function protectUnfocusedPhoto(result,photoWasFocused){
+    if(!photoWasFocused && ['possible_wasp','possible_bee'].includes(result?.verdict))
       return {...result,verdict:'uncertain',reason:'needs_insect_focus'};
     return result;
   }
@@ -312,8 +312,8 @@
     $('#result-badge').textContent='ONE PHOTO · NOT A SAFETY GUARANTEE';
     $('#result-photo').src=photo;$('#result-photo').hidden=false;$('#result-wasp').hidden=true;$('#result-sun').hidden=true;
     const outcomes={
-      possible_wasp:{title:'POSSIBLE<br>WASP',message:'Stay back and tell your grown-up!',symbol:'!',voice:'Possible wasp in this photo. Stay calm, move away slowly, and tell your grown-up.'},
-      possible_bee:{title:'POSSIBLE<br>BEE',message:'Give it space and tell your grown-up!',symbol:'!',voice:'Possible bee in this photo. Give it space, and tell your grown-up.'},
+      possible_wasp:{title:'POSSIBLE<br>WASP',message:'This is only a guess about the selected area. It never means a person is dangerous. Show your grown-up.',symbol:'!',voice:'The selected area may contain a wasp. This is only a photo guess and never means a person is dangerous. Show your grown-up.'},
+      possible_bee:{title:'POSSIBLE<br>BEE',message:'This is only a guess about the selected area. It never means a person is dangerous. Show your grown-up.',symbol:'!',voice:'The selected area may contain a bee. This is only a photo guess and never means a person is dangerous. Show your grown-up.'},
       no_wasp_visible:{title:'NOT<br>SPOTTED',message:'No wasp spotted in this photo. It could still be nearby.',symbol:'?',voice:'No wasp spotted in this photo. Buzz can miss a wasp. Stay with your grown-up.'},
       uncertain:{title:'I’M NOT<br>SURE',message:'Ask your grown-up to look. Keep your distance.',symbol:'?',voice:'I am not sure about this photo. Keep your distance and ask your grown-up to look.'}
     };
@@ -341,7 +341,7 @@
     }
     if(!localRecognition && !photoAllowed){$('#camera-status').textContent='Ask your grown-up to allow a photo check first.';dialog.showModal();return;}
     if(!/^https?:$/.test(location.protocol)){$('#camera-status').textContent='Open the website version to check photos. This downloaded HTML file cannot load the recognition model.';return;}
-    const wholeCameraPhoto=!selectedPhoto && Boolean(stream) && !selectedPhotoFocused;
+    const photoWasFocused=selectedPhotoFocused;
     let photo;
     try{photo=selectedPhoto||photoData($('#camera'),$('#camera').videoWidth,$('#camera').videoHeight);}
     catch{$('#camera-status').textContent='The camera is still warming up. Try Scan again in a moment.';return;}
@@ -354,7 +354,7 @@
         const {classifyPhoto}=await import('./insect-classifier.mjs');
         const rawBody=await classifyPhoto(photo,{signal:current.signal,onProgress:message=>{if(generation===scanGeneration && screen==='camera'){$('#camera-status').textContent=message;$('#radar-label').textContent=/Getting|Loading/.test(message)?'Getting ready…':'Analyzing photo…';}}});
         if(generation!==scanGeneration || screen!=='camera' || current.signal.aborted)return;
-        const body=protectWholeCameraPhoto(rawBody,wholeCameraPhoto);
+        const body=protectUnfocusedPhoto(rawBody,photoWasFocused);
         photoResult(body.verdict,photo,body.reason);return;
       }
       const response=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photo,consent:true}),signal:current.signal});
@@ -365,7 +365,7 @@
         $('#camera-status').textContent=messages[body.error]||'The photo could not be checked. Ask your grown-up to help, or try again.';return;
       }
       if(!['possible_wasp','no_wasp_visible','uncertain'].includes(body.verdict))throw new Error('Invalid result');
-      const protectedBody=protectWholeCameraPhoto(body,wholeCameraPhoto);
+      const protectedBody=protectUnfocusedPhoto(body,photoWasFocused);
       photoResult(protectedBody.verdict,photo,protectedBody.reason);
     }catch{if(generation===scanGeneration && screen==='camera')$('#camera-status').textContent='Could not check this photo. You may be offline, or the photo service is unavailable. No result was made.';}
     finally{clearTimeout(timer);if(generation===scanGeneration){scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}}
