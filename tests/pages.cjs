@@ -56,25 +56,23 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   const cases=[
     ['natural-wasps-1.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
     ['natural-wasps-2.jpg',/INSECT NOTCONFIRMED|I’M NOTSURE/],
-    ['natural-wasps-3.jpg',/POSSIBLEWASP/],
-    ['natural-bees-1.jpg',/POSSIBLEBEE/],
-    ['natural-bees-2.jpg',/POSSIBLEBEE/],
+    ['natural-wasps-3.jpg',/SELECT THEINSECT/],
+    ['natural-bees-1.jpg',/SELECT THEINSECT/],
+    ['natural-bees-2.jpg',/SELECT THEINSECT/],
     ['dragonfly.bmp',/I’M NOTSURE/],
     ['cat.bmp',/INSECT NOTCONFIRMED/],
     ['person.bmp',/INSECT NOTCONFIRMED/]
   ];
-  let waspsDetected=0;
   for(const [file,expected] of cases){
     await page.locator('#home').click();await page.locator('#practice').click();
     await choosePhoto(page,path.join(fixtures,file));
     await scan(page);const title=await page.locator('#result-title').textContent();assert.match(title,expected);
     assert.equal(await page.locator('#result-photo').isVisible(),true);
     assert.match(await page.locator('#result-screen .result-note').textContent(),/cannot measure/);
-    if(file.startsWith('natural-wasps') && title==='POSSIBLEWASP')waspsDetected++;
     if(file==='natural-wasps-2.jpg' && title==='I’M NOTSURE')console.log('KNOWN LIMITATION: wasp sample 2 remains uncertain.');
     else console.log('PASS Real model:',file,'→',title);
   }
-  console.log(`Real model sample outcome: ${waspsDetected}/3 wasp photos identified; two bee photos must be identified, and portrait/cat photos rejected. Uncertain results are not an all clear.`);
+  console.log('Real model UI outcome: whole photos cannot trigger insect alerts; likely insect candidates require a grown-up to select the insect area.');
   for(const [file,expected] of [['natural-wasps-3.jpg','possible_wasp'],['natural-bees-2.jpg','possible_bee'],['person.bmp','uncertain'],['cat.bmp','uncertain']]){
     const source='data:image/'+(file.endsWith('.bmp')?'bmp':'jpeg')+';base64,'+(await readFile(path.join(fixtures,file))).toString('base64');
     const result=await page.evaluate(async source=>{
@@ -142,7 +140,7 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   assert.equal(apiRequests,0);assert.equal(uploads,0);
   await context.setOffline(true);await page.reload();
   await page.locator('#home').click();await page.locator('#practice').click();await choosePhoto(page,path.join(fixtures,'natural-wasps-3.jpg'));
-  await scan(page);assert.match(await page.locator('#result-title').textContent(),/POSSIBLEWASP/);await context.setOffline(false);
+  await scan(page);assert.match(await page.locator('#result-title').textContent(),/SELECT THEINSECT/);await context.setOffline(false);
   console.log('PASS Actual model inference works offline after its first download, with zero photo uploads or API calls.');
   const failureContext=await browser.newContext({serviceWorkers:'block'});const failure=await failureContext.newPage();
   await failure.route('**/models/insects.tflite',route=>route.abort());await failure.goto(base);await failure.locator('#practice').click();
