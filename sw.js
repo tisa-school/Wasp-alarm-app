@@ -1,4 +1,4 @@
-const CACHE = 'wasp-buddy-d9724794b666';
+const CACHE = 'wasp-buddy-3c19ddf4dfc2';
 const ASSETS = ['./','./index.html','./mobile.css','./mobile.js','./audio.js','./runtime-config.js','./insect-classifier.mjs','./photo-crop.mjs','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting()));
