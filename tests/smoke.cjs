@@ -62,7 +62,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.locator('#history').click();assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
     await page.locator('#history-screen [data-go="buzz"]').click();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await page.locator('#practice').click();
   });
-  await check('Primary screens fit common phone viewports without page scrolling or clipped controls',async()=>{
+  await check('Primary screens fit common phone and browser viewports without page scrolling or clipped controls',async()=>{
     const assertFits=async label=>{
       const fit=await page.evaluate(()=>{
         const screen=[...document.querySelectorAll('.screen')].find(element=>!element.hidden),bounds=screen.getBoundingClientRect();
@@ -71,7 +71,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       });
       assert.deepEqual(fit,{horizontal:true,vertical:true,children:true,footer:true},label);
     };
-    for(const [width,height] of [[320,640],[375,667],[390,844],[430,932]]){
+    for(const [width,height] of [[320,640],[375,667],[390,844],[430,932],[1024,700],[1366,768],[1440,900],[2048,1152]]){
       await page.setViewportSize({width,height});await page.locator('#home').click();await assertFits(`Home ${width}x${height}`);
       await page.locator('#listen-buzz').click();await assertFits(`Sound ${width}x${height}`);
       await page.locator('#buzzing-screen [data-go="buzz"]').click();await page.locator('#practice').click();await assertFits(`Camera ${width}x${height}`);
