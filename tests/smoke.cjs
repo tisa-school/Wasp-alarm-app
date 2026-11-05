@@ -62,9 +62,20 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.locator('#history').click();assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
     await page.locator('#history-screen [data-go="buzz"]').click();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await page.locator('#practice').click();
   });
-  await check('No horizontal overflow at phone sizes',async()=>{
-    await page.locator('#home').click();await page.locator('#practice').click();
-    for(const width of [320,390,430]){await page.setViewportSize({width,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
+  await check('Primary screens fit common phone viewports without page scrolling or clipped controls',async()=>{
+    const assertFits=async label=>{
+      const fit=await page.evaluate(()=>{
+        const screen=[...document.querySelectorAll('.screen')].find(element=>!element.hidden),bounds=screen.getBoundingClientRect();
+        const children=[...screen.children].filter(element=>{const box=element.getBoundingClientRect(),style=getComputedStyle(element);return style.display!=='none'&&style.visibility!=='hidden'&&box.width&&box.height;});
+        return {horizontal:document.documentElement.scrollWidth<=innerWidth,vertical:document.body.scrollHeight<=innerHeight,children:children.every(element=>{const box=element.getBoundingClientRect();return box.top>=bounds.top-1&&box.bottom<=bounds.bottom+1;}),footer:document.querySelector('footer').getBoundingClientRect().bottom<=innerHeight+1};
+      });
+      assert.deepEqual(fit,{horizontal:true,vertical:true,children:true,footer:true},label);
+    };
+    for(const [width,height] of [[320,640],[375,667],[390,844],[430,932]]){
+      await page.setViewportSize({width,height});await page.locator('#home').click();await assertFits(`Home ${width}x${height}`);
+      await page.locator('#listen-buzz').click();await assertFits(`Sound ${width}x${height}`);
+      await page.locator('#buzzing-screen [data-go="buzz"]').click();await page.locator('#practice').click();await assertFits(`Camera ${width}x${height}`);
+    }
   });
   await check('Camera denial keeps the camera app usable',async()=>{
     await page.addInitScript(()=>Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>{throw new DOMException('Denied','NotAllowedError');}}));
