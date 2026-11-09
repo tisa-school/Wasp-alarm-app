@@ -10,8 +10,8 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 1. Open camera → **Use device camera** (or **Turn camera on**). Allow camera access. This opens a webcam on a computer or the device camera on a phone. Stop camera releases it.
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
 3. Tap **CHECK** to check one captured frame or selected photo. The first check downloads two models and the needed browser runtime assets from this same website. Subsequent checks reuse them, including offline after a completed first download.
-4. A whole-photo insect candidate asks a grown-up to select the insect area before any possible-wasp or possible-bee result. Rejected portraits and objects say **No wasp result**. Keep a grown-up nearby.
-5. Tap **Listen for buzzing**, then **Start listening**, to analyze five seconds of microphone frequencies on the device. A steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
+4. A whole photo can show **Possible wasp** or **Possible bee** only when the general insect model and species model independently agree. Rejected portraits and objects say **No wasp result**. Use **Focus on one insect** when a busy photo remains uncertain, and keep a grown-up nearby.
+5. Tap either **Listen** button, then **Start listening**, to analyze five seconds of microphone frequencies on the device. The wider detector can notice quieter speaker recordings and harmonics, but a steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
 6. The speaker button mutes/unmutes sound with audible confirmation tones. **Grown-ups → Test sound** plays three notes and requests Buzz's voice.
 
 If a photo contains a collage or screen borders, use **Focus on one insect**
@@ -58,13 +58,13 @@ Audio is initialized during a button tap before asynchronous photo analysis. Mut
 
 The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained narrow buzzing pattern but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
 
-Voice questions: a grown-up must opt in, then tap the question microphone again. Ask in English. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. The browser’s speech service may need internet access.
+Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same prepared wasp-safety helper. The browser’s speech service may need internet access.
 
 ## Privacy
 
 Default photo recognition stays on the device. Camera frames and selected photos are not uploaded, recorded, or included in history. The camera stops on leaving its screen or hiding the app. Only up to 20 result labels/timestamps and preferences are kept in local storage, which can be cleared. The website downloads the model and runtime when first needed. The service worker caches assets, never camera images or API responses.
 
-The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions require grown-up opt-in and use the browser's speech service, which may send audio to its provider. Buzz answers a fixed set of safety topics, not unrestricted AI questions. No analytics or external fonts are loaded.
+The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions start only after the microphone is tapped and use the browser's speech service, which may send audio to its provider. Typed questions stay in the page. Buzz answers a fixed set of reviewed wasp-safety topics, not unrestricted AI questions. No analytics or external fonts are loaded.
 
 ## Run locally
 

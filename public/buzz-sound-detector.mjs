@@ -9,19 +9,22 @@ export function summarizeBuzzFrames(frames){
   if(valid.length<8)return {verdict:'too_quiet'};
   const audible=valid.filter(frame=>frame.level>-65);
   if(audible.length<valid.length*.3)return {verdict:'too_quiet'};
-  const candidates=audible.filter(frame=>frame.frequency>=90&&frame.frequency<=500&&frame.prominence>=10);
-  if(candidates.length<valid.length*.45)return {verdict:'no_steady_buzz'};
+  // Phone speakers and microphones often shift energy to a harmonic above the
+  // insect's wingbeat. Accept a wider tonal range and modest prominence, while
+  // still requiring the tone to persist across many frames.
+  const candidates=audible.filter(frame=>frame.frequency>=70&&frame.frequency<=1000&&frame.prominence>=6);
+  if(candidates.length<valid.length*.3)return {verdict:'no_steady_buzz'};
   const centre=median(candidates.map(frame=>frame.frequency));
-  const tolerance=Math.max(20,centre*.15);
+  const tolerance=Math.max(35,centre*.2);
   const stable=candidates.filter(frame=>Math.abs(frame.frequency-centre)<=tolerance);
-  if(stable.length<valid.length*.45||stable.length<candidates.length*.75)return {verdict:'uncertain'};
+  if(stable.length<valid.length*.3||stable.length<candidates.length*.65)return {verdict:'uncertain'};
   return {verdict:'possible_buzz',frequency:Math.round(median(stable.map(frame=>frame.frequency)))};
 }
 
 function frameFromSpectrum(data,sampleRate,fftSize){
   const hzPerBin=sampleRate/fftSize;
   let peak=-Infinity,peakIndex=-1;
-  for(let index=Math.ceil(90/hzPerBin);index<=Math.min(data.length-1,Math.floor(500/hzPerBin));index++){
+  for(let index=Math.ceil(70/hzPerBin);index<=Math.min(data.length-1,Math.floor(1000/hzPerBin));index++){
     if(data[index]>peak){peak=data[index];peakIndex=index;}
   }
   const background=[];

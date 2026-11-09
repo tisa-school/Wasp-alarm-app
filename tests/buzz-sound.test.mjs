@@ -10,6 +10,14 @@ test('A sustained narrow buzz is reported only as a possible generic buzz',()=>{
   assert.ok(result.frequency>=185&&result.frequency<=195);
 });
 
+test('A quieter speaker recording with harmonic jitter is still noticed as buzzing',()=>{
+  const result=summarizeBuzzFrames(frames(45,index=>index%4===0
+    ? {frequency:720,level:-70,prominence:3}
+    : {frequency:720+(index%5-2)*14,level:-54,prominence:7.5}));
+  assert.equal(result.verdict,'possible_buzz');
+  assert.ok(result.frequency>=680&&result.frequency<=760);
+});
+
 test('Quiet, broad, and changing sounds do not become buzz alerts',()=>{
   assert.equal(summarizeBuzzFrames(frames(45,()=>({frequency:190,level:-80,prominence:20}))).verdict,'too_quiet');
   assert.equal(summarizeBuzzFrames(frames(45,()=>({frequency:190,level:-30,prominence:4}))).verdict,'no_steady_buzz');

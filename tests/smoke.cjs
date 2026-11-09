@@ -43,8 +43,12 @@ async function openHistory(page){
     await page.locator('[data-question="space"]').evaluate(button=>button.click());
     assert.match(await page.locator('#speech').textContent(),/Give wasps lots of space/);
     await page.locator('#microphone').click();
-    assert.equal(await page.locator('#parent-dialog').evaluate(el=>el.open),true);
-    await page.locator('#parent-done').click();
+    assert.equal(await page.locator('#parent-dialog').evaluate(el=>el.open),false);
+    assert.match(await page.locator('#voice-status').textContent(),/Voice questions are unavailable|Starting microphone|Listening|No microphone/);
+    if(await page.locator('#chat-dialog').evaluate(el=>el.open))await page.locator('#chat-close').click();
+    await page.locator('#type-question').click();await page.locator('#chat-input').fill('What should I do near a nest?');await page.locator('#chat-form button[type="submit"]').click();
+    assert.match(await page.locator('#chat-answer').textContent(),/Do not touch or block a wasp nest/);
+    await page.locator('#chat-close').click();
     await page.locator('#practice').click();
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
     await page.locator('#camera-screen [data-go="buzz"]').click();
@@ -57,6 +61,10 @@ async function openHistory(page){
     assert.equal(await page.locator('#buzz-screen').isVisible(),false);
     assert.match(await page.locator('#take-photo').textContent(),/Start camera/);
     assert.equal(await page.locator('#practice-alert').count(),0);
+  });
+  await check('Camera Listen opens the real buzzing checker',async()=>{
+    await page.locator('#listen').click();assert.equal(await page.locator('#buzzing-screen').isVisible(),true);
+    await page.locator('#buzzing-screen [data-go="buzz"]').click();await page.locator('#practice').click();
   });
   await check('Sound button toggles accessible state',async()=>{
     await goHome(page);
@@ -74,6 +82,16 @@ async function openHistory(page){
   await check('Scan history starts empty and can return to camera',async()=>{
     await openHistory(page);assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
     await page.locator('#history-screen [data-go="buzz"]').click();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await page.locator('#practice').click();
+  });
+  await check('Saved history can be cleared and its Open camera button works',async()=>{
+    const controlsContext=await browser.newContext({viewport:{width:390,height:844}});
+    await controlsContext.addInitScript(()=>localStorage.setItem('buzz-practice',JSON.stringify([{clear:false,time:Date.now(),verdict:'possible_wasp'}])));
+    try{
+      const controls=await controlsContext.newPage();await controls.goto(base);await controls.locator('#history').click();
+      assert.equal(await controls.locator('.history-card').count(),1);
+      await controls.locator('#clear-history').click();assert.match(await controls.locator('#history-list').textContent(),/No photo checks yet/);
+      await controls.locator('#again').click();assert.equal(await controls.locator('#camera-screen').isVisible(),true);
+    }finally{await controlsContext.close();}
   });
   await check('Primary screens fit common phone and browser viewports without page scrolling or clipped controls',async()=>{
     const assertFits=async label=>{
@@ -274,7 +292,8 @@ async function openHistory(page){
       await voicePage.evaluate(()=>window.__lastUtterance.onerror({error:'synthesis-failed'}));
       assert.match(await voicePage.locator('#voice-status').textContent(),/voice could not play/);
       await voicePage.evaluate(()=>{window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined;});
-      await voicePage.locator('#microphone').click();assert.match(await voicePage.locator('#voice-status').textContent(),/browser cannot understand/);
+      await voicePage.locator('#microphone').click();assert.match(await voicePage.locator('#voice-status').textContent(),/Voice questions are unavailable/);
+      assert.equal(await voicePage.locator('#chat-dialog').evaluate(el=>el.open),true);
     }finally{await voiceContext.close();}
   });
   assert.deepEqual(errors,[]);console.log(`${checks} functional checks passed; no browser JavaScript errors.`);

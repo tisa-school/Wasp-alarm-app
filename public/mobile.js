@@ -2,6 +2,7 @@
   'use strict';
   const $ = selector => document.querySelector(selector);
   const app = $('.app');
+  const chatDialog = $('#chat-dialog');
   const photoChecksEnabled = window.BUZZ_RUNTIME?.photoChecks !== false;
   const localRecognition = photoChecksEnabled && window.BUZZ_RUNTIME?.recognition !== 'server';
   const scanLabel = photoChecksEnabled ? 'CHECK' : 'PHOTO';
@@ -129,13 +130,40 @@
   }
   function answer(question) {
     const text = question.toLowerCase();
-    if (/stung|sting|hurt|ouch/.test(text)) return 'Tell your grown-up straight away if you get stung. They will help you. Keep away from the wasp.';
-    if (/bee|bees/.test(text)) return 'Bees and wasps are little garden helpers! Give them space. Look with your eyes, and keep your hands still.';
+    if (/can('|’)t breathe|cannot breathe|breathing|throat|mouth|allerg|emergency/.test(text)) return 'Tell a grown-up now. Trouble breathing, faintness, or swelling of the mouth or throat after a sting needs emergency medical help.';
+    if (/stung|sting|hurt|ouch/.test(text)) return 'Tell your grown-up straight away if you get stung. Walk away from the insect. A grown-up can wash the area and watch for a serious reaction.';
+    if (/nest|hive|home|roof|attic|hole/.test(text)) return 'Do not touch or block a wasp nest. Walk away slowly and tell a grown-up. A trained adult should decide what to do.';
+    if (/inside|indoors|room|house|window|car/.test(text)) return 'Stay calm, move away, and tell a grown-up. Do not trap or swat the wasp. A grown-up can open a safe way outside.';
+    if (/food|drink|juice|sweet|picnic|bin|trash/.test(text)) return 'Wasps may visit sweet food, drinks, and bins. Cover drinks, look before you sip, put food away, and tell a grown-up if wasps gather nearby.';
+    if (/swat|hit|kill|squash|wave/.test(text)) return 'Do not swat or wave at a wasp. Keep your hands still and walk away slowly. Fast movements can make it feel threatened.';
+    if (/bee|bees|difference/.test(text)) return 'Bees are usually fuzzier and collect pollen. Wasps often look smoother. Do not get close to check—give both insects space and ask a grown-up.';
+    if (/why|good|help|eat|garden/.test(text)) return 'Wasps help gardens by hunting other insects and some also pollinate flowers. We can respect them by giving them space.';
     if (/scared|afraid|fear/.test(text)) return 'It is okay to feel scared. Take a slow breath. Walk away slowly, and find your grown-up. They can help!';
-    if (/space|near|wasp|walk|safe/.test(text)) return 'Give wasps lots of space! Keep your hands still, walk away slowly, and tell your grown-up. One big grown-up step is a good way to practise making space.';
-    return 'I know a few things about wasps, bees, and staying calm. Try asking: why do wasps need space? You can also tap a picture question!';
+    if (/space|near|close|distance|metre|meter|wasp|walk|safe/.test(text)) return 'Give wasps lots of space. Keep your hands still, walk away slowly, and tell a grown-up. The camera cannot measure distance or say an area is safe.';
+    return 'I can help with wasp safety. Ask what to do near a wasp, near a nest, around food, inside a room, or after a sting.';
   }
-  function tellBuzz(question) { stopListening(); $('#speech').textContent = answer(question); speak($('#speech').textContent); }
+  function tellBuzz(question) {
+    stopListening();
+    const reply=answer(question);
+    $('#speech').textContent=reply;
+    $('#chat-answer').textContent=reply;
+    speak(reply);
+  }
+  function openChat(){
+    stopListening();sounds.stop();
+    $('#chat-answer').textContent=$('#speech').textContent;
+    if(!chatDialog.open)chatDialog.showModal();
+    $('#chat-input').focus();
+  }
+  $('#type-question').addEventListener('click',openChat);
+  $('#chat-close').addEventListener('click',()=>chatDialog.close());
+  $('#chat-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    const question=$('#chat-input').value.trim();
+    if(!question)return;
+    tellBuzz(question);$('#chat-input').value='';
+  });
+  for(const button of document.querySelectorAll('[data-chat-question]')) button.addEventListener('click',()=>tellBuzz(button.dataset.chatQuestion));
   $('#sound').addEventListener('click', () => {
     clearTimeout(muteTimer);
     if(soundOn){
@@ -162,11 +190,7 @@
   $('#buzz-listen').addEventListener('click',startBuzzListening);
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
   $('#read').addEventListener('click',() => {stopListening();speak($('#speech').textContent);});
-  $('#listen').addEventListener('click',() => {
-    const guidance = photoChecksEnabled ? 'Point your camera, then tap Check to check one photo. If you see a wasp, keep your hands still, walk away slowly, and tell a grown-up. A photo check can miss a wasp.' : 'Point your camera and tap Photo to take a picture. This camera does not recognise wasps. If you see a wasp, walk away slowly and tell a grown-up.';
-    $('#camera-status').textContent = guidance;
-    speak(guidance);
-  });
+  $('#listen').addEventListener('click',() => show('buzzing'));
   async function startCamera() {
     cancelScan();
     if (cameraPending || stream) return;
@@ -224,9 +248,11 @@
   $('#microphone').addEventListener('click',() => {
     if (recognition) { stopListening(); $('#voice-status').textContent='Voice stopped. You can pick a picture question.'; return; }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { $('#voice-status').textContent='This browser cannot understand voice questions. Try Safari or Chrome, or tap a picture question.';return; }
+    if (!SpeechRecognition) { $('#voice-status').textContent='Voice questions are unavailable here. Type your question instead.';openChat();return; }
     if(!window.isSecureContext){$('#voice-status').textContent='Microphone questions need the secure HTTPS website. You can still tap a picture question.';return;}
-    if (!voiceAllowed) { $('#voice-status').textContent='Ask your grown-up to allow voice questions, then tap the mic again.';dialog.showModal();return; }
+    // Pressing the clearly labelled microphone is the explicit user action that
+    // starts voice input. The browser still controls its own permission prompt.
+    if (!voiceAllowed) { voiceAllowed=true;save('buzz-voice-allowed','yes');$('#voice-consent').checked=true; }
     // Stop all output before opening the microphone so Buzz cannot hear itself.
     sounds.stop();
     let current;
@@ -284,7 +310,10 @@
     const scale=Math.min(1,960/Math.max(width,height));
     const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));
     canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-    return canvas.toDataURL('image/jpeg',.82);
+    // Keep insect markings sharp enough for the local models. The old quality
+    // level blurred narrow yellow/black patterns and turned clear fixtures into
+    // uncertain results after an otherwise harmless browser re-encode.
+    return canvas.toDataURL('image/jpeg',.94);
   }
   $('#choose-photo').addEventListener('click',()=>{cancelScan();$('#photo-file').value='';$('#photo-file').click();});
   $('#photo-file').addEventListener('change',async event=>{
@@ -357,7 +386,10 @@
   });
   function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Check to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
   function protectUnfocusedPhoto(result,photoWasFocused){
-    if(!photoWasFocused && ['possible_wasp','possible_bee'].includes(result?.verdict))
+    // The local result already requires independent insect and species models.
+    // Let that conservative two-model candidate reach the user. Keep requiring
+    // a selected insect for server or otherwise unverified whole-photo guesses.
+    if(!photoWasFocused && ['possible_wasp','possible_bee'].includes(result?.verdict) && result?.reason!=='two_model_candidate')
       return {...result,verdict:'uncertain',reason:'needs_insect_focus'};
     return result;
   }
