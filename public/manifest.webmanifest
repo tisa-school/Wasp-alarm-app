@@ -1,13 +1,13 @@
 {
   "id": "./",
-  "name": "Buzz Patrol Lab",
-  "short_name": "Buzz Patrol",
-  "description": "A picture-first wasp-safety experiment. Not a safety detector.",
+  "name": "Wasp Buddy Lab",
+  "short_name": "Wasp Buddy",
+  "description": "A child-friendly wasp-safety experiment. Not a safety detector.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#9ddeff",
-  "theme_color": "#9ddeff",
+  "background_color": "#ffe5a3",
+  "theme_color": "#ffe5a3",
   "lang": "en",
   "icons": [
     {

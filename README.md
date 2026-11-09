@@ -1,7 +1,7 @@
-# Buzz Patrol Lab
+# Wasp Buddy Reference Lab
 
-Experimental child-design branch based on Wasp Buddy. It is intended for a
-separate Vercel preview and does not replace the main app.
+Experimental interface branch based on the supplied Wasp Buddy phone designs.
+It is intended for a separate Vercel preview and does not replace the main app.
 
 A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, a five-second buzzing-pattern checker, spoken guidance, large buttons, and sound controls. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, camera, and sound-checker buttons.
 
@@ -9,14 +9,14 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 
 1. Open camera → **Use device camera** (or **Turn camera on**). Allow camera access. This opens a webcam on a computer or the device camera on a phone. Stop camera releases it.
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
-3. Tap **SCAN** to check one captured frame or selected photo. The first scan downloads two models and the needed browser runtime assets from this same website. Subsequent scans reuse them, including offline after a completed first download.
+3. Tap **CHECK** to check one captured frame or selected photo. The first check downloads two models and the needed browser runtime assets from this same website. Subsequent checks reuse them, including offline after a completed first download.
 4. A whole-photo insect candidate asks a grown-up to select the insect area before any possible-wasp or possible-bee result. Rejected portraits and objects say **No wasp result**. Keep a grown-up nearby.
 5. Tap **Listen for buzzing**, then **Start listening**, to analyze five seconds of microphone frequencies on the device. A steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
 6. The speaker button mutes/unmutes sound with audible confirmation tones. **Grown-ups → Test sound** plays three notes and requests Buzz's voice.
 
 If a photo contains a collage or screen borders, use **Focus on one insect**
 from the photo preview or result. Tap one insect in the stored photo, adjust
-**Box size**, choose **Use selected area**, then tap **Scan**. Position controls
+**Box size**, choose **Use selected area**, then tap **Check**. Position controls
 also work with a keyboard. Cancel keeps the original photo. This only crops the
 local photo; it does not bypass the image models or upload it. It is a workaround
 for framing problems, not reliable automatic recognition of every collage.
@@ -45,7 +45,7 @@ regression checks, not an estimate of real-world accuracy. Reliable
 field detection still needs a larger, independent validation dataset.
 
 A mint radar overlays the preview when the camera is starting or a photo is ready.
-It says **Ready to scan** until Scan is tapped, then brightens and sweeps faster
+It says **Ready to check** until Check is tapped, then brightens and sweeps faster
 while the models download or analyze the image. It is a progress indicator, not
 continuous insect detection. Leaving the camera, hiding the app, or completing a
 check stops the busy state. Reduced-motion mode keeps a still glow and text.
@@ -93,7 +93,7 @@ GitHub Pages currently publishes the **gh-pages** branch at its root. `deploy:pa
 
 Vercel can also serve `dist/web/` using the included configuration. No public Vercel deployment was performed here. Publishing a cloud development environment is separate from deploying this website.
 
-The optional older server recognizer remains available via `/api/scan`. To deliberately use it, configure `recognition: 'server'` in runtime-config and set `WASP_VISION_API_KEY` securely on the server (or reuse an existing `OPENAI_API_KEY`). That mode sends photos to OpenAI only after separate adult photo-upload consent and explicit Scan. It is not used by the default app and has no configured key here. Public server deployments require access protection and durable authenticated rate limits.
+The optional older server recognizer remains available via `/api/scan`. To deliberately use it, configure `recognition: 'server'` in runtime-config and set `WASP_VISION_API_KEY` securely on the server (or reuse an existing `OPENAI_API_KEY`). That mode sends photos to OpenAI only after separate adult photo-upload consent and an explicit Check. It is not used by the default app and has no configured key here. Public server deployments require access protection and durable authenticated rate limits.
 
 ## Validation and model sources
 

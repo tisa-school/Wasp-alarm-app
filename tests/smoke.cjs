@@ -11,6 +11,17 @@ let browser;
 let checks = 0;
 async function check(label,work){await work();checks++;console.log(`PASS ${label}`);}
 async function choosePhoto(page){const pending=page.waitForEvent('filechooser');await page.locator('#choose-photo').click();await(await pending).setFiles(path.join(root,'public/icon-192.png'));}
+async function goHome(page){
+  if(await page.locator('#buzz-screen').isVisible())return;
+  const back=page.locator('[data-go="buzz"]:visible').first();
+  if(await back.count())await back.click();
+  else await page.locator('#home:visible').click();
+}
+async function openHistory(page){
+  const shortcut=page.locator('.history-shortcut:visible').first();
+  if(await shortcut.count())await shortcut.click();
+  else {await goHome(page);await page.locator('#history:visible').click();}
+}
 (async()=>{
   for(let i=0;i<50;i++){
     try{const response=await fetch(base);if(response.ok)break;}catch{}
@@ -24,12 +35,12 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);await page.locator('#practice').click();
   await check('Talk to Buzz is the first screen, with safety answers and optional voice',async()=>{
-    await page.locator('#home').click();
+    await goHome(page);
     assert.equal(await page.locator('#buzz-screen').isVisible(),true);
-    assert.equal(await page.locator('#buzz-title').textContent(),'Buzz Patrol');
+    assert.equal(await page.locator('#buzz-title').textContent(),'Talk to Buzz');
     assert.match(await page.locator('#speech').textContent(),/Hi! I’m Buzz/);
     assert.equal(await page.locator('#camera').evaluate(el=>el.srcObject),null);
-    await page.locator('[data-question="space"]').click();
+    await page.locator('[data-question="space"]').evaluate(button=>button.click());
     assert.match(await page.locator('#speech').textContent(),/Give wasps lots of space/);
     await page.locator('#microphone').click();
     assert.equal(await page.locator('#parent-dialog').evaluate(el=>el.open),true);
@@ -41,25 +52,27 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.locator('#practice').click();
   });
   await check('Open camera opens the real camera screen',async()=>{
-    assert.equal(await page.title(),'Buzz Patrol Lab');
+    assert.equal(await page.title(),'Wasp Buddy Lab');
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
     assert.equal(await page.locator('#buzz-screen').isVisible(),false);
     assert.match(await page.locator('#take-photo').textContent(),/Start camera/);
     assert.equal(await page.locator('#practice-alert').count(),0);
   });
   await check('Sound button toggles accessible state',async()=>{
+    await goHome(page);
     await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'false');
     await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');
+    await page.locator('#practice').click();
   });
   await check('Live camera starts and releases its tracks on navigation',async()=>{
     await page.locator('#take-photo').click();
     await page.waitForFunction(()=>document.querySelector('#camera').srcObject?.getVideoTracks()[0]?.readyState==='live');
     await page.evaluate(()=>window.testTrack=document.querySelector('#camera').srcObject.getVideoTracks()[0]);
-    await page.locator('#history').click();assert.equal(await page.evaluate(()=>window.testTrack.readyState),'ended');
-    await page.locator('#home').click();await page.locator('#practice').click();assert.equal(await page.locator('#camera-screen').isVisible(),true);
+    await openHistory(page);assert.equal(await page.evaluate(()=>window.testTrack.readyState),'ended');
+    await goHome(page);await page.locator('#practice').click();assert.equal(await page.locator('#camera-screen').isVisible(),true);
   });
   await check('Scan history starts empty and can return to camera',async()=>{
-    await page.locator('#history').click();assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
+    await openHistory(page);assert.match(await page.locator('#history-list').textContent(),/No photo checks yet/);
     await page.locator('#history-screen [data-go="buzz"]').click();assert.equal(await page.locator('#buzz-screen').isVisible(),true);await page.locator('#practice').click();
   });
   await check('Primary screens fit common phone and browser viewports without page scrolling or clipped controls',async()=>{
@@ -72,7 +85,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       assert.deepEqual(fit,{horizontal:true,vertical:true,children:true,footer:true},label);
     };
     for(const [width,height] of [[320,640],[375,667],[390,844],[430,932],[1024,700],[1366,768],[1440,900],[2048,1152]]){
-      await page.setViewportSize({width,height});await page.locator('#home').click();await assertFits(`Home ${width}x${height}`);
+      await page.setViewportSize({width,height});await goHome(page);await assertFits(`Home ${width}x${height}`);
       await page.locator('#listen-buzz').click();await assertFits(`Sound ${width}x${height}`);
       await page.locator('#buzzing-screen [data-go="buzz"]').click();await page.locator('#practice').click();await assertFits(`Camera ${width}x${height}`);
     }
@@ -121,7 +134,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     assert.equal(await soundPage.locator('#buzz-screen').isVisible(),true);await soundContext.close();
   });
   await check('Choose a photo opens the file picker and produces a JPEG for Scan',async()=>{
-    await page.locator('#home').click();await page.locator('#practice').click();
+    await goHome(page);await page.locator('#practice').click();
     await choosePhoto(page);
     await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
     assert.match(await page.locator('#captured-photo').getAttribute('src'),/^data:image\/jpeg;base64,/);
@@ -138,14 +151,14 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     context=await browser.newContext({serviceWorkers:'block',permissions:['camera'],viewport:{width:390,height:844}});
     await context.addInitScript(()=>{window.BUZZ_RUNTIME={photoChecks:true,recognition:'server'};});
     page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(base);await page.locator('#practice').click();
-    await page.locator('#grownups').click();await page.locator('#photo-consent').check();await page.locator('#parent-done').click();
+    await goHome(page);await page.locator('#grownups').click();await page.locator('#photo-consent').check();await page.locator('#parent-done').click();
     let uploads=0;
     for(const verdict of ['possible_wasp','no_wasp_visible','uncertain']){
       await page.route('**/api/scan',async route=>{
         const body=route.request().postDataJSON();assert.equal(body.consent,true);assert.match(body.image,/^data:image\/jpeg;base64,/);uploads++;
         await route.fulfill({json:{verdict,scope:'single_photo',distanceAvailable:false}});
       });
-      await page.locator('#home').click();await page.locator('#practice').click();
+      await goHome(page);await page.locator('#practice').click();
       if(verdict==='possible_wasp'){
         await page.locator('#enable-camera').click();
         await page.waitForFunction(()=>document.querySelector('#camera').videoWidth>0);
@@ -184,7 +197,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       await radarPage.waitForFunction(()=>document.querySelector('.camera-frame').getAttribute('aria-busy')==='false');
       assert.equal(await radarPage.locator('#scan-radar').isVisible(),false);
       await choosePhoto(radarPage);await radarPage.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
-      assert.equal(await radarPage.locator('#radar-label').textContent(),'Ready to scan');
+      assert.equal(await radarPage.locator('#radar-label').textContent(),'Ready to check');
       let pending;
       await radarPage.route('**/api/scan',route=>{pending=route;});
       await radarPage.locator('#check').click();
@@ -200,17 +213,17 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       await radarPage.locator('#result-screen').waitFor({state:'visible'});
       assert.equal(await radarPage.locator('#scan-radar').evaluate(el=>el.hidden),true);
       assert.equal(await radarPage.locator('.camera-frame').getAttribute('aria-busy'),'false');
-      await radarPage.locator('#home').click();await radarPage.locator('#practice').click();await choosePhoto(radarPage);
+      await goHome(radarPage);await radarPage.locator('#practice').click();await choosePhoto(radarPage);
       await radarPage.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
       await radarPage.locator('#check').click();await radarPage.waitForFunction(()=>document.querySelector('.camera-frame').getAttribute('aria-busy')==='true');
-      await radarPage.locator('#home').click();
+      await goHome(radarPage);
       assert.equal(await radarPage.locator('#scan-radar').evaluate(el=>el.hidden),true);
       assert.equal(await radarPage.locator('.camera-frame').getAttribute('aria-busy'),'false');
       assert.equal(await radarPage.locator('#buzz-screen').isVisible(),true);
     }finally{await radarContext.close();}
   });
   await check('A failed online scan produces no result',async()=>{
-    await page.locator('#home').click();await page.locator('#practice').click();
+    await goHome(page);await page.locator('#practice').click();
     await choosePhoto(page);
     await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
     await context.setOffline(true);await page.locator('#check').click();
@@ -257,7 +270,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
       await voicePage.clock.resume();
       await voicePage.locator('#microphone').click();await voicePage.locator('#practice').click();
       assert.equal(await voicePage.evaluate(()=>window.__voice.onresult),null,'Leaving Buzz detaches recognition callbacks');
-      await voicePage.locator('#home').click();await voicePage.locator('#read').click();
+      await goHome(voicePage);await voicePage.locator('#read').click();
       await voicePage.evaluate(()=>window.__lastUtterance.onerror({error:'synthesis-failed'}));
       assert.match(await voicePage.locator('#voice-status').textContent(),/voice could not play/);
       await voicePage.evaluate(()=>{window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined;});
