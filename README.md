@@ -1,6 +1,7 @@
-# Wasp Buddy
+# Buzz Patrol Lab
 
-[Open the app](https://tisa-school.github.io/Wasp-alarm-app/)
+Experimental child-design branch based on Wasp Buddy. It is intended for a
+separate Vercel preview and does not replace the main app.
 
 A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, a five-second buzzing-pattern checker, spoken guidance, large buttons, and sound controls. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, camera, and sound-checker buttons.
 

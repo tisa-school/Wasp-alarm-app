@@ -26,7 +26,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
   await check('Talk to Buzz is the first screen, with safety answers and optional voice',async()=>{
     await page.locator('#home').click();
     assert.equal(await page.locator('#buzz-screen').isVisible(),true);
-    assert.equal(await page.locator('#buzz-title').textContent(),'Talk to Buzz');
+    assert.equal(await page.locator('#buzz-title').textContent(),'Buzz Patrol');
     assert.match(await page.locator('#speech').textContent(),/Hi! I’m Buzz/);
     assert.equal(await page.locator('#camera').evaluate(el=>el.srcObject),null);
     await page.locator('[data-question="space"]').click();
@@ -41,7 +41,7 @@ async function choosePhoto(page){const pending=page.waitForEvent('filechooser');
     await page.locator('#practice').click();
   });
   await check('Open camera opens the real camera screen',async()=>{
-    assert.equal(await page.title(),'Wasp Buddy');
+    assert.equal(await page.title(),'Buzz Patrol Lab');
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
     assert.equal(await page.locator('#buzz-screen').isVisible(),false);
     assert.match(await page.locator('#take-photo').textContent(),/Start camera/);
