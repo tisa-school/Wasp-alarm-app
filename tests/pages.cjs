@@ -37,14 +37,14 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   await page.goto(base);await page.locator('#practice').click();
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-  assert.equal(await page.locator('#camera-screen').isVisible(),true);assert.equal(await page.locator('#check').textContent(),'SCAN');
+  assert.equal(await page.locator('#camera-screen').isVisible(),true);assert.equal(await page.locator('#check').textContent(),'CHECK');
   let chooserCount=0;const chooserListener=()=>chooserCount++;page.on('filechooser',chooserListener);
   await page.locator('#take-photo').click();await page.waitForFunction(()=>document.querySelector('#camera').videoWidth>0);
   assert.equal(chooserCount,0);page.off('filechooser',chooserListener);
   await page.evaluate(()=>window.trackForTest=document.querySelector('#camera').srcObject.getVideoTracks()[0]);
   await page.locator('#take-photo').click();assert.equal(await page.evaluate(()=>window.trackForTest.readyState),'ended');
   console.log('PASS Device camera button opens camera API, never the file picker; Stop camera releases tracks.');
-  await page.locator('#grownups').click();await page.locator('#test-sound').click();
+  await page.locator('#camera-screen .back').click();await page.locator('#grownups').click();await page.locator('#test-sound').click();
   await page.evaluate(()=>{const context=window.__audioContexts[0];window.__meter=context.createAnalyser();window.__meter.fftSize=2048;context.masterForTest.connect(window.__meter);});
   assert.ok(await audioPeak(page)>.005,'Sound test must generate an actual nonzero audio waveform');
   await page.locator('#parent-done').click();

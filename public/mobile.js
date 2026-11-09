@@ -4,7 +4,7 @@
   const app = $('.app');
   const photoChecksEnabled = window.BUZZ_RUNTIME?.photoChecks !== false;
   const localRecognition = photoChecksEnabled && window.BUZZ_RUNTIME?.recognition !== 'server';
-  const scanLabel = photoChecksEnabled ? 'SCAN' : 'PHOTO';
+  const scanLabel = photoChecksEnabled ? 'CHECK' : 'PHOTO';
   let soundOn = true;
   const sounds = new window.BuzzSound();
   let stream;
@@ -66,7 +66,7 @@
     $('#scan-radar').classList.toggle('is-busy',busy);
     $('.camera-frame').classList.toggle('radar-visible',visible);
     $('.camera-frame').setAttribute('aria-busy',String(busy));
-    $('#radar-label').textContent=scanController?'Analyzing photo…':cameraPending?'Waiting for camera…':'Ready to scan';
+    $('#radar-label').textContent=scanController?'Analyzing photo…':cameraPending?'Waiting for camera…':'Ready to check';
   }
   function stopCamera() {
     cameraGeneration++;
@@ -85,6 +85,7 @@
     if (next !== 'camera') { stopCamera(); clearPhoto(); }
     if (next !== 'result') { $('#result-photo').hidden = true; $('#result-photo').removeAttribute('src'); }
     screen = next;updateRadar();
+    app.dataset.screen=next;
     document.querySelectorAll('.screen').forEach(section => section.hidden = section.id !== `${next}-screen`);
     app.classList.remove('alert-state','clear-state','photo-neutral');
     window.scrollTo({top:0,behavior:'instant'});
@@ -162,7 +163,7 @@
   for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
   $('#read').addEventListener('click',() => {stopListening();speak($('#speech').textContent);});
   $('#listen').addEventListener('click',() => {
-    const guidance = photoChecksEnabled ? 'Point your camera, then tap Scan to check one photo. If you see a wasp, keep your hands still, walk away slowly, and tell a grown-up. A photo check can miss a wasp.' : 'Point your camera and tap Photo to take a picture. This camera does not recognise wasps. If you see a wasp, walk away slowly and tell a grown-up.';
+    const guidance = photoChecksEnabled ? 'Point your camera, then tap Check to check one photo. If you see a wasp, keep your hands still, walk away slowly, and tell a grown-up. A photo check can miss a wasp.' : 'Point your camera and tap Photo to take a picture. This camera does not recognise wasps. If you see a wasp, walk away slowly and tell a grown-up.';
     $('#camera-status').textContent = guidance;
     speak(guidance);
   });
@@ -179,7 +180,7 @@
       if (screen !== 'camera' || generation !== cameraGeneration || document.hidden) { acquired.getTracks().forEach(track => track.stop()); return; }
       stream = acquired; $('#camera').srcObject = stream; $('#camera-placeholder').hidden = true;
       $('#take-photo').textContent = 'Stop camera';
-      $('#camera-status').textContent = photoChecksEnabled ? 'Live camera is on. Tap Scan to check one photo with your grown-up.' : 'Live camera is on. Tap Photo to capture a picture on this device.';
+      $('#camera-status').textContent = photoChecksEnabled ? 'Live camera is on. Tap Check to check one photo with your grown-up.' : 'Live camera is on. Tap Photo to capture a picture on this device.';
     } catch (error) {
       if (generation === cameraGeneration) $('#camera-status').textContent = error.name === 'NotAllowedError' ? 'Camera permission was not given. Allow it in your browser’s site settings, or use “Choose a photo”.' : 'Camera unavailable. Check another app is not using it, or use “Choose a photo”.';
     } finally {
@@ -199,15 +200,19 @@
     const list = $('#history-list'); list.replaceChildren();
     if (!practiceHistory.length) { const empty = document.createElement('p');empty.className='empty';empty.textContent='No photo checks yet.';list.append(empty); }
     for (const item of practiceHistory) {
-      const entry = document.createElement('p');
-      const names = {possible_wasp:'Photo · Possible wasp',possible_bee:'Photo · Possible bee',no_wasp_visible:'Photo · No wasp spotted',uncertain:'Photo · Not sure'};
+      const entry = document.createElement('article');entry.className='history-card';
+      const picture=document.createElement('img');picture.src='icon.svg';picture.alt='';entry.append(picture);
+      const copy=document.createElement('div');
+      const names = {possible_wasp:'Possible wasp — ask a grown-up',possible_bee:'Possible bee — ask a grown-up',no_wasp_visible:'No wasp spotted — not an all clear',uncertain:'No confirmed result'};
       const label = names[item.verdict] || 'Photo · Not sure';
-      entry.textContent = `${label}\n${new Date(item.time).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
-      entry.style.whiteSpace='pre-line';list.append(entry);
+      const title=document.createElement('strong');title.textContent=label;copy.append(title);
+      const time=document.createElement('span');time.textContent=new Date(item.time).toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});copy.append(time);
+      entry.append(copy);list.append(entry);
     }
     $('#clear-history').hidden = practiceHistory.length === 0;
   }
   $('#history').addEventListener('click',() => { renderHistory(); show('history'); });
+  for (const button of document.querySelectorAll('.history-shortcut')) button.addEventListener('click',() => { renderHistory(); show('history'); });
   $('#clear-history').addEventListener('click',() => { practiceHistory=[];save('buzz-practice','[]');renderHistory(); });
   const dialog = $('#parent-dialog');
   $('#grownups').addEventListener('click',() => { stopListening(); sounds.stop(); dialog.showModal(); });
@@ -293,7 +298,7 @@
       selectedPhoto=photoData(image,image.naturalWidth,image.naturalHeight);
       selectedPhotoFocused=false;
       $('#captured-photo').src=selectedPhoto;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;updateRadar();
-      $('#camera-status').textContent=photoChecksEnabled ? 'Your photo is ready. Tap Scan with your grown-up to check it.' : 'Your real photo is ready. This camera version cannot recognise wasps.';
+      $('#camera-status').textContent=photoChecksEnabled ? 'Your photo is ready. Tap Check with your grown-up to check it.' : 'Your real photo is ready. This camera version cannot recognise wasps.';
     }catch{$('#camera-status').textContent='Could not read that photo. Try taking another picture.';}
     finally{URL.revokeObjectURL(url);}
   });
@@ -346,11 +351,11 @@
       show('camera');stopCamera();selectedPhoto=photo;
       selectedPhotoFocused=true;
       $('#captured-photo').src=photo;$('#captured-photo').hidden=false;$('#camera-placeholder').hidden=true;updateRadar();
-      $('#camera-status').textContent='Selected area ready. Tap Scan to check this insect photo.';
+      $('#camera-status').textContent='Selected area ready. Tap Check to check this insect photo.';
       focusDialog.close();$('#check').focus();
     }catch{$('#focus-status').textContent='Could not use that selection. Keep the original photo and try again.';}
   });
-  function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Scan to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
+  function cancelScan(){if(scanController)$('#camera-status').textContent='Photo check paused. Tap Check to try again.';scanGeneration++;scanController?.abort();scanController=undefined;$('#check').disabled=false;$('#check').textContent=scanLabel;updateRadar();}
   function protectUnfocusedPhoto(result,photoWasFocused){
     if(!photoWasFocused && ['possible_wasp','possible_bee'].includes(result?.verdict))
       return {...result,verdict:'uncertain',reason:'needs_insect_focus'};
@@ -394,7 +399,7 @@
     const photoWasFocused=selectedPhotoFocused;
     let photo;
     try{photo=selectedPhoto||photoData($('#camera'),$('#camera').videoWidth,$('#camera').videoHeight);}
-    catch{$('#camera-status').textContent='The camera is still warming up. Try Scan again in a moment.';return;}
+    catch{$('#camera-status').textContent='The camera is still warming up. Try Check again in a moment.';return;}
     scanController=new AbortController();const current=scanController,generation=++scanGeneration;updateRadar();
     $('#check').disabled=true;$('#check').textContent='WAIT…';$('#camera-status').textContent='Checking this photo… stay with your grown-up.';
     speak('Checking your photo. Stay with your grown-up.');
@@ -430,7 +435,7 @@
     $('#photo-consent').closest('label').hidden=true;
   }else if(localRecognition){
     $('#photo-consent').closest('label').hidden=true;
-    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first scan downloads two image models and the browser runtime from this website; later scans reuse them. It can mistake other objects for insects or fail to identify a wasp. A clear insect photo works best; do not approach an insect to take one.';
+    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first check downloads two image models and the browser runtime from this website; later checks reuse them. It can mistake other objects for insects or fail to identify a wasp. A clear insect photo works best; do not approach an insect to take one.';
     $('#service-status').textContent='Experimental on-device photo identification uses two models. They can still be wrong. No API key is needed. It cannot confirm safety or measure distance.';
     $('#camera-screen .practice-badge').textContent='ON-DEVICE PHOTO CHECK · CAN BE WRONG';
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});

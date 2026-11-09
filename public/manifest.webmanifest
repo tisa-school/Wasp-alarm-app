@@ -1,13 +1,13 @@
 {
   "id": "./",
-  "name": "Wasp Buddy",
-  "short_name": "Buzz",
-  "description": "Learn with Buzz and check insect photos on your device. Not a safety detector.",
+  "name": "Wasp Buddy Lab",
+  "short_name": "Wasp Buddy",
+  "description": "A child-friendly wasp-safety experiment. Not a safety detector.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#ffe8a4",
-  "theme_color": "#ffe8a4",
+  "background_color": "#ffe5a3",
+  "theme_color": "#ffe5a3",
   "lang": "en",
   "icons": [
     {
