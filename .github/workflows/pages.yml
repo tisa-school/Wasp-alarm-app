@@ -21,5 +21,14 @@ jobs:
       - name: Install the project browser
         run: npx playwright install --with-deps chromium
       - run: npm run check
-      - run: npm test
+      - name: Run npm test
+        run: |
+          set +e
+          npm test > test-output.log 2>&1
+          status=$?
+          cat test-output.log
+          if [ "$status" -ne 0 ]; then
+            node -e "const fs=require('node:fs');const text=fs.readFileSync('test-output.log','utf8').slice(-6000).replaceAll('%','%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');console.log('::error title=npm test failed::'+text)"
+            exit "$status"
+          fi
       - run: npm run test:pages
