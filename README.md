@@ -58,13 +58,13 @@ Audio is initialized during a button tap before asynchronous photo analysis. Mut
 
 The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained narrow buzzing pattern but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
 
-Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, shows the recognized words, and explains permission, missing-microphone, silence, and network errors. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same prepared wasp-safety helper. The browser’s speech service may need internet access.
+Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, adds the recognized question and answer to the chat, and invites another question. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same safety chat. The chat shows a short thinking state, remembers the current safety topic for simple follow-up questions, and keeps the conversation on the page. The browser’s speech service may need internet access.
 
 ## Privacy
 
 Default photo recognition stays on the device. Camera frames and selected photos are not uploaded, recorded, or included in history. The camera stops on leaving its screen or hiding the app. Only up to 20 result labels/timestamps and preferences are kept in local storage, which can be cleared. The website downloads the model and runtime when first needed. The service worker caches assets, never camera images or API responses.
 
-The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions start only after the microphone is tapped and use the browser's speech service, which may send audio to its provider. Typed questions stay in the page. Buzz answers a fixed set of reviewed wasp-safety topics, not unrestricted AI questions. No analytics or external fonts are loaded.
+The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions start only after the microphone is tapped and use the browser's speech service, which may send audio to its provider. Typed questions and the conversation history stay in the page and disappear on reload. Buzz uses a small reviewed wasp-safety guide with simple contextual follow-ups; it is not unrestricted AI. No analytics or external fonts are loaded.
 
 ## Run locally
 

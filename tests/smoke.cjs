@@ -41,13 +41,20 @@ async function openHistory(page){
     assert.match(await page.locator('#speech').textContent(),/Hi! I’m Buzz/);
     assert.equal(await page.locator('#camera').evaluate(el=>el.srcObject),null);
     await page.locator('[data-question="space"]').evaluate(button=>button.click());
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Give wasps lots of space'));
     assert.match(await page.locator('#speech').textContent(),/Give wasps lots of space/);
     await page.locator('#microphone').click();
     assert.equal(await page.locator('#parent-dialog').evaluate(el=>el.open),false);
     assert.match(await page.locator('#voice-status').textContent(),/Voice questions are unavailable|Starting microphone|Listening|No microphone/);
     if(await page.locator('#chat-dialog').evaluate(el=>el.open))await page.locator('#chat-close').click();
     await page.locator('#type-question').click();await page.locator('#chat-input').fill('What should I do near a nest?');await page.locator('#chat-form button[type="submit"]').click();
-    assert.match(await page.locator('#chat-answer').textContent(),/Do not touch or block a wasp nest/);
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Do not touch or block a wasp nest'));
+    assert.match(await page.locator('.user-message').last().textContent(),/What should I do near a nest/);
+    assert.match(await page.locator('.buzz-message').last().textContent(),/Do not touch or block a wasp nest/);
+    await page.locator('#chat-input').fill('Why?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('defend the area around their nest'));
+    assert.match(await page.locator('.user-message').last().textContent(),/Why/);
+    assert.match(await page.locator('.buzz-message').last().textContent(),/defend the area around their nest/);
     await page.locator('#chat-close').click();
     await page.locator('#practice').click();
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
@@ -270,20 +277,23 @@ async function openHistory(page){
       assert.match(await voicePage.locator('#voice-status').textContent(),/Listening/);
       assert.ok(await voicePage.evaluate(()=>window.__cancelCount)>cancellations,'Listening stops Buzz playback');
       await voicePage.evaluate(()=>window.__voice.onresult({results:[[{transcript:'I got stung'}]]}));
+      await voicePage.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Tell your grown-up straight away'));
       assert.match(await voicePage.locator('#speech').textContent(),/Tell your grown-up straight away/);
-      assert.match(await voicePage.locator('#voice-status').textContent(),/Buzz heard: “I got stung”/);
+      assert.match(await voicePage.locator('#voice-status').textContent(),/Buzz answered.*keep chatting/);
+      assert.match(await voicePage.locator('.user-message').last().textContent(),/I got stung/);
+      assert.match(await voicePage.locator('.buzz-message').last().textContent(),/Tell your grown-up straight away/);
       assert.equal(await voicePage.locator('#microphone').getAttribute('aria-label'),'Ask Buzz a question using your microphone');
-      for(const [error,expected] of [['not-allowed',/site settings/],['no-speech',/No speech/],['audio-capture',/No microphone/],['network',/internet connection/]]){
+      for(const [error,expected] of [['not-allowed',/site settings/],['no-speech',/did not catch/],['audio-capture',/No microphone/],['network',/internet connection/]]){
         await voicePage.locator('#microphone').click();
         await voicePage.evaluate(error=>window.__voice.onerror({error}),error);
         assert.match(await voicePage.locator('#voice-status').textContent(),expected);
         assert.equal(await voicePage.locator('#microphone').evaluate(el=>el.classList.contains('listening')),false);
       }
       await voicePage.locator('#microphone').click();await voicePage.evaluate(()=>window.__voice.onend());
-      assert.match(await voicePage.locator('#voice-status').textContent(),/No question was heard/);
+      assert.match(await voicePage.locator('#voice-status').textContent(),/did not catch/);
       await voicePage.clock.install();
       await voicePage.locator('#microphone').click();await voicePage.clock.fastForward(15_001);
-      assert.match(await voicePage.locator('#voice-status').textContent(),/No question was heard/);
+      assert.match(await voicePage.locator('#voice-status').textContent(),/did not catch/);
       assert.equal(await voicePage.locator('#microphone').evaluate(el=>el.classList.contains('listening')),false);
       await voicePage.clock.resume();
       await voicePage.locator('#microphone').click();await voicePage.locator('#practice').click();

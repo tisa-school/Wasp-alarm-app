@@ -24,6 +24,8 @@
   let scanGeneration = 0;
   let buzzController;
   let buzzGeneration = 0;
+  let chatGeneration = 0;
+  let chatTopic = 'general';
   let practiceHistory = [];
   try { voiceAllowed = localStorage.getItem('buzz-voice-allowed') === 'yes';
     soundOn = localStorage.getItem('buzz-sound') !== 'off';
@@ -54,7 +56,7 @@
       const current=recognition;recognition=undefined;
       current.onstart=null;current.onend=null;current.onerror=null;current.onresult=null;
       try{current.abort();}catch{ /* Already stopped by the browser. */ }
-      if(/^(Listening|Starting microphone)/.test($('#voice-status').textContent))$('#voice-status').textContent='Voice stopped. Tap the mic to ask again.';
+      if(/^(Listening|Starting microphone)/.test($('#voice-status').textContent))$('#voice-status').textContent='Paused. Tap the mic whenever you want to keep chatting.';
     }
     $('#microphone').classList.remove('listening');
     $('#microphone').setAttribute('aria-label', 'Ask Buzz a question using your microphone');
@@ -130,28 +132,62 @@
   }
   function answer(question) {
     const text = question.toLowerCase();
-    if (/can('|’)t breathe|cannot breathe|breathing|throat|mouth|allerg|emergency/.test(text)) return 'Tell a grown-up now. Trouble breathing, faintness, or swelling of the mouth or throat after a sting needs emergency medical help.';
-    if (/stung|sting|hurt|ouch/.test(text)) return 'Tell your grown-up straight away if you get stung. Walk away from the insect. A grown-up can wash the area and watch for a serious reaction.';
-    if (/nest|hive|home|roof|attic|hole/.test(text)) return 'Do not touch or block a wasp nest. Walk away slowly and tell a grown-up. A trained adult should decide what to do.';
-    if (/inside|indoors|room|house|window|car/.test(text)) return 'Stay calm, move away, and tell a grown-up. Do not trap or swat the wasp. A grown-up can open a safe way outside.';
-    if (/food|drink|juice|sweet|picnic|bin|trash/.test(text)) return 'Wasps may visit sweet food, drinks, and bins. Cover drinks, look before you sip, put food away, and tell a grown-up if wasps gather nearby.';
-    if (/swat|hit|kill|squash|wave/.test(text)) return 'Do not swat or wave at a wasp. Keep your hands still and walk away slowly. Fast movements can make it feel threatened.';
-    if (/bee|bees|difference/.test(text)) return 'Bees are usually fuzzier and collect pollen. Wasps often look smoother. Do not get close to check—give both insects space and ask a grown-up.';
-    if (/why|good|help|eat|garden/.test(text)) return 'Wasps help gardens by hunting other insects and some also pollinate flowers. We can respect them by giving them space.';
-    if (/scared|afraid|fear/.test(text)) return 'It is okay to feel scared. Take a slow breath. Walk away slowly, and find your grown-up. They can help!';
-    if (/space|near|close|distance|metre|meter|wasp|walk|safe/.test(text)) return 'Give wasps lots of space. Keep your hands still, walk away slowly, and tell a grown-up. The camera cannot measure distance or say an area is safe.';
+    const followUp=/\b(why|more|then|next|else|really|how come)\b/.test(text);
+    if(followUp&&chatTopic==='nest')return 'Wasps may defend the area around their nest. That is why you should leave it alone, walk away slowly, and let a trained adult handle it.';
+    if(followUp&&chatTopic==='sting')return 'A grown-up should watch how you feel after a sting. Trouble breathing, faintness, or swelling of the mouth or throat means emergency help is needed.';
+    if(followUp&&chatTopic==='food')return 'Check open cups and cans before drinking, because a wasp can crawl inside. Put lids on sweet drinks and move away if several wasps gather.';
+    if(followUp&&chatTopic==='inside')return 'Give the wasp space and keep people away from it. A grown-up can open a window or door and wait for it to leave.';
+    if(followUp&&chatTopic==='space')return 'Slow, calm movement is best. Do not test how close you can get—the camera cannot measure a safe distance.';
+    if (/\b(hello|hi|hey|good morning|good afternoon)\b/.test(text)) {chatTopic='general';return 'Hi! I’m Buzz. I can chat about wasps, nests, stings, food, and how to stay calm. What would you like to know?';}
+    if (/\b(thank you|thanks|cheers)\b/.test(text)) return 'You’re welcome! Remember: stay calm, give wasps space, and tell a grown-up when you need help.';
+    if (/\b(bye|goodbye|see you)\b/.test(text)) return 'Bye for now! Stay calm, give insects space, and come back if you have another wasp-safety question.';
+    if (/who are you|what are you|your name|are you (an )?ai/.test(text)) {chatTopic='general';return 'I’m Buzz, the app’s friendly safety helper. I use a small reviewed guide rather than a full AI brain, but I can still chat about common wasp-safety questions.';}
+    if (/how are you|how do you feel/.test(text)) return 'I’m ready to help! Ask me something about wasps or staying safe.';
+    if (/can('|’)t breathe|cannot breathe|breathing|throat|mouth|allerg|emergency/.test(text)) {chatTopic='emergency';return 'Tell a grown-up now. Trouble breathing, faintness, or swelling of the mouth or throat after a sting needs emergency medical help.';}
+    if (/stung|sting|hurt|ouch/.test(text)) {chatTopic='sting';return 'Tell your grown-up straight away if you get stung. Walk away from the insect. A grown-up can wash the area and watch for a serious reaction.';}
+    if (/nest|hive|roof|attic|hole/.test(text)) {chatTopic='nest';return 'Do not touch or block a wasp nest. Walk away slowly and tell a grown-up. A trained adult should decide what to do.';}
+    if (/inside|indoors|room|house|window|car/.test(text)) {chatTopic='inside';return 'Stay calm, move away, and tell a grown-up. Do not trap or swat the wasp. A grown-up can open a safe way outside.';}
+    if (/food|drink|juice|sweet|picnic|bin|trash/.test(text)) {chatTopic='food';return 'Wasps may visit sweet food, drinks, and bins. Cover drinks, look before you sip, put food away, and tell a grown-up if wasps gather nearby.';}
+    if (/where.*(live|nest)|live.*where|habitat/.test(text)) {chatTopic='nest';return 'Wasps can build nests in trees, sheds, roofs, soil, or wall spaces. Never search for or touch a nest. Tell a grown-up if you notice many wasps using the same place.';}
+    if (/sleep|night|dark/.test(text)) {chatTopic='nature';return 'Many wasps are less active when it is cool or dark, but you should still leave them and their nests alone. Ask a grown-up to help.';}
+    if (/look like|colour|color|legs|wings|stripe/.test(text)) {chatTopic='appearance';return 'Wasps often have six legs, four wings, and yellow, black, brown, or reddish markings. Some harmless insects look similar, so do not move closer to identify one.';}
+    if (/dangerous|attack|will.*sting|do.*sting/.test(text)) {chatTopic='space';return 'A wasp can sting, especially if it or its nest feels threatened. Stay calm, do not swat, walk away slowly, and tell a grown-up.';}
+    if (/swat|hit|kill|squash|wave/.test(text)) {chatTopic='movement';return 'Do not swat or wave at a wasp. Keep your hands still and walk away slowly. Fast movements can make it feel threatened.';}
+    if (/bee|bees|difference/.test(text)) {chatTopic='bee';return 'Bees are usually fuzzier and collect pollen. Wasps often look smoother. Do not get close to check—give both insects space and ask a grown-up.';}
+    if (/why|good|help|eat|garden/.test(text)) {chatTopic='nature';return 'Wasps help gardens by hunting other insects and some also pollinate flowers. We can respect them by giving them space.';}
+    if (/scared|afraid|fear/.test(text)) {chatTopic='fear';return 'It is okay to feel scared. Take a slow breath. Walk away slowly, and find your grown-up. They can help!';}
+    if (/space|near|close|distance|metre|meter|wasp|walk|safe/.test(text)) {chatTopic='space';return 'Give wasps lots of space. Keep your hands still, walk away slowly, and tell a grown-up. The camera cannot measure distance or say an area is safe.';}
+    chatTopic='general';
     return 'I can help with wasp safety. Ask what to do near a wasp, near a nest, around food, inside a room, or after a sting.';
   }
-  function tellBuzz(question) {
+  function addChatMessage(role,text,{thinking=false}={}){
+    const message=document.createElement('div');message.className=`chat-message ${role==='user'?'user-message':'buzz-message'}${thinking?' thinking-message':''}`;
+    const name=document.createElement('strong');name.textContent=role==='user'?'You':'Buzz';
+    const copy=document.createElement('p');copy.textContent=text;
+    message.append(name,copy);$('#chat-log').append(message);
+    $('#chat-log').scrollTop=$('#chat-log').scrollHeight;
+    return message;
+  }
+  function wait(milliseconds){return new Promise(resolve=>setTimeout(resolve,milliseconds));}
+  async function tellBuzz(question,{source='button'}={}) {
+    const clean=String(question||'').trim().slice(0,200);if(!clean)return;
     stopListening();
-    const reply=answer(question);
+    document.querySelectorAll('.thinking-message').forEach(message=>message.remove());
+    addChatMessage('user',clean);
+    const generation=++chatGeneration;
+    $('#speech').textContent='Buzz is thinking…';
+    $('#voice-status').textContent='Buzz is thinking…';
+    const thinking=addChatMessage('buzz','Thinking…',{thinking:true});
+    await wait(420);
+    if(generation!==chatGeneration)return;
+    const reply=answer(clean);thinking.remove();
+    addChatMessage('buzz',reply);
     $('#speech').textContent=reply;
-    $('#chat-answer').textContent=reply;
+    $('#voice-status').textContent=source==='voice'?'Buzz answered. Tap the mic to keep chatting.':'Buzz answered. Ask me another question!';
     speak(reply);
   }
   function openChat(){
     stopListening();sounds.stop();
-    $('#chat-answer').textContent=$('#speech').textContent;
     if(!chatDialog.open)chatDialog.showModal();
     $('#chat-input').focus();
   }
@@ -161,9 +197,9 @@
     event.preventDefault();
     const question=$('#chat-input').value.trim();
     if(!question)return;
-    tellBuzz(question);$('#chat-input').value='';
+    $('#chat-input').value='';void tellBuzz(question,{source:'typed'});
   });
-  for(const button of document.querySelectorAll('[data-chat-question]')) button.addEventListener('click',()=>tellBuzz(button.dataset.chatQuestion));
+  for(const button of document.querySelectorAll('[data-chat-question]')) button.addEventListener('click',()=>void tellBuzz(button.dataset.chatQuestion,{source:'typed'}));
   $('#sound').addEventListener('click', () => {
     clearTimeout(muteTimer);
     if(soundOn){
@@ -188,7 +224,7 @@
   for (const id of ['practice','again']) $('#'+id).addEventListener('click',() => show('camera'));
   $('#listen-buzz').addEventListener('click',()=>show('buzzing'));
   $('#buzz-listen').addEventListener('click',startBuzzListening);
-  for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
+  for (const button of document.querySelectorAll('[data-question]')) button.addEventListener('click',() => void tellBuzz(button.dataset.question === 'sting' ? 'I got stung' : 'give wasps space'));
   $('#read').addEventListener('click',() => {stopListening();speak($('#speech').textContent);});
   $('#listen').addEventListener('click',() => show('buzzing'));
   async function startCamera() {
@@ -246,55 +282,54 @@
   $('#photo-consent').addEventListener('change',event => {photoAllowed=event.target.checked;save('buzz-photo-allowed',photoAllowed ? 'yes' : 'no');if(!photoAllowed)cancelScan();});
   $('#voice-consent').addEventListener('change',event => { voiceAllowed=event.target.checked;save('buzz-voice-allowed',voiceAllowed ? 'yes' : 'no');if(!voiceAllowed)stopListening(); });
   $('#microphone').addEventListener('click',() => {
-    if (recognition) { stopListening(); $('#voice-status').textContent='Voice stopped. You can pick a picture question.'; return; }
+    if (recognition) { stopListening(); $('#voice-status').textContent='Paused. Tap the mic whenever you want to keep chatting.'; return; }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { $('#voice-status').textContent='Voice questions are unavailable here. Type your question instead.';openChat();return; }
-    if(!window.isSecureContext){$('#voice-status').textContent='Microphone questions need the secure HTTPS website. You can still tap a picture question.';return;}
+    if(!window.isSecureContext){$('#voice-status').textContent='Voice chat needs the secure HTTPS website. Type your question instead.';openChat();return;}
     // Pressing the clearly labelled microphone is the explicit user action that
     // starts voice input. The browser still controls its own permission prompt.
     if (!voiceAllowed) { voiceAllowed=true;save('buzz-voice-allowed','yes');$('#voice-consent').checked=true; }
     // Stop all output before opening the microphone so Buzz cannot hear itself.
     sounds.stop();
     let current;
-    try{current=new SpeechRecognition();}catch{$('#voice-status').textContent='Voice questions could not start in this browser. Tap a picture question.';return;}
+    try{current=new SpeechRecognition();}catch{$('#voice-status').textContent='Voice chat could not start here. Type your question instead.';openChat();return;}
     recognition=current;
     current.lang='en-GB';current.interimResults=false;current.maxAlternatives=1;current.continuous=false;
     const finish=message=>{
       if(recognition!==current)return;
       stopListening();$('#voice-status').textContent=message;
     };
-    const timeout=()=>finish('No question was heard. Tap the mic to try again, or pick a picture question.');
+    const timeout=()=>finish('I did not catch that. Tap the mic and ask me again.');
     current.onstart=()=>{
       if(recognition!==current)return;
       clearTimeout(listeningTimer);listeningTimer=setTimeout(timeout,15_000);
-      $('#voice-status').textContent='Listening… ask in English. Tap the mic to stop.';
+      $('#voice-status').textContent='Listening… ask me about wasp safety.';
     };
     current.onresult=event=>{
       if(recognition!==current)return;
       const transcript=event.results?.[0]?.[0]?.transcript?.trim();
-      if(!transcript){finish('No words were heard. Tap the mic to try again, or pick a picture question.');return;}
+      if(!transcript){finish('I did not catch that. Tap the mic and ask me again.');return;}
       stopListening();
-      $('#voice-status').textContent='Buzz heard: “'+transcript.slice(0,200)+'”';
-      tellBuzz(transcript);
+      void tellBuzz(transcript,{source:'voice'});
     };
     current.onerror=event=>{
       const messages={
         'not-allowed':'Microphone access was blocked. Ask your grown-up to allow the microphone in this browser’s site settings, then try again.',
-        'service-not-allowed':'The browser’s speech service is blocked. Ask your grown-up to check browser settings, or tap a picture question.',
+        'service-not-allowed':'The browser’s speech service is blocked. Ask a grown-up to check browser settings, or type your question.',
         'audio-capture':'No microphone is available. Check that it is connected and another app is not using it.',
-        'no-speech':'No speech was heard. Tap the mic and ask in English, or pick a picture question.',
-        network:'The browser’s speech service could not connect. Check your internet connection, or tap a picture question.',
-        'language-not-supported':'English voice recognition is unavailable in this browser. Tap a picture question.',
-        aborted:'Voice stopped. Tap the mic to try again.'
+        'no-speech':'I did not catch that. Tap the mic and ask me again.',
+        network:'The browser’s speech service could not connect. Check your internet connection, or type your question.',
+        'language-not-supported':'English voice recognition is unavailable here. Type your question instead.',
+        aborted:'Paused. Tap the mic whenever you want to keep chatting.'
       };
-      finish(messages[event.error]||'Voice recognition failed. Tap the mic to try again, or pick a picture question.');
+      finish(messages[event.error]||'Voice chat had a problem. Tap the mic to try again, or type your question.');
     };
-    current.onend=()=>finish('No question was heard. Tap the mic to try again, or pick a picture question.');
+    current.onend=()=>finish('I did not catch that. Tap the mic and ask me again.');
     $('#microphone').classList.add('listening');$('#microphone').setAttribute('aria-label','Stop listening');
     $('#voice-status').textContent='Starting microphone… allow access if your browser asks.';
     listeningTimer=setTimeout(timeout,15_000);
     try{current.start();}
-    catch(error){finish(error.name==='NotAllowedError'?'Microphone access was blocked. Ask your grown-up to allow it in this browser’s site settings.':'Microphone unavailable. Tap the mic to try again, or pick a picture question.');}
+    catch(error){finish(error.name==='NotAllowedError'?'Microphone access was blocked. Ask your grown-up to allow it in this browser’s site settings.':'Microphone unavailable. Tap the mic to try again, or type your question.');}
   });
   window.addEventListener('beforeinstallprompt',event => { event.preventDefault();installPrompt=event;$('#install').hidden=false; });
   $('#install').addEventListener('click',async () => {
