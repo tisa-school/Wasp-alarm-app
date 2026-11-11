@@ -77,8 +77,8 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     assert.equal(await page.locator('#result-photo').isVisible(),true);
     assert.match(await page.locator('#result-screen .result-note').textContent(),/cannot measure/);
     if(file==='person.bmp'){
-      assert.match(await page.locator('#result-message').textContent(),/A person is never a wasp/);
-      assert.equal(await page.locator('#focus-result').isVisible(),false);
+      assert.match(await page.locator('#result-message').textContent(),/never says a person is dangerous/);
+      assert.equal(await page.locator('#focus-result').isVisible(),true);
     }
     if(file==='natural-wasps-2.jpg' && title==='I’M NOTSURE')console.log('KNOWN LIMITATION: wasp sample 2 remains uncertain.');
     else console.log('PASS Real model:',file,'→',title);
@@ -101,6 +101,20 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
     assert.equal(result.distanceAvailable,false);
     console.log('PASS Photo embedded in a screen:',file,'→',result.verdict);
   }
+  const waspGuideResult=await page.evaluate(async sources=>{
+    const images=await Promise.all(sources.map(async src=>{const image=new Image();image.src=src;await image.decode();return image;}));
+    // Reproduce a camera pointed at a printed or on-screen insect guide. Each
+    // wasp is clear, but the surrounding page and multiple panels previously
+    // diluted the whole-photo insect evidence into "No wasp result".
+    const canvas=document.createElement('canvas');canvas.width=800;canvas.height=600;
+    const context=canvas.getContext('2d');context.fillStyle='#f4e1be';context.fillRect(0,0,800,600);
+    context.fillStyle='#111';context.font='32px sans-serif';context.fillText('Wasp   Insect',35,45);
+    for(let index=0;index<4;index++)context.drawImage(images[index],25+(index%2)*390,70+Math.floor(index/2)*255,360,225);
+    const {classifyPhoto}=await import('./insect-classifier.mjs');
+    return classifyPhoto(canvas.toDataURL('image/jpeg',.94));
+  },await Promise.all(['natural-wasps-1.jpg','natural-wasps-3.jpg','natural-wasps-1.jpg','natural-wasps-3.jpg'].map(async file=>'data:image/jpeg;base64,'+(await readFile(path.join(fixtures,file))).toString('base64'))));
+  assert.equal(waspGuideResult.verdict,'possible_wasp');
+  console.log('PASS Multiple wasp panels on a photographed guide → possible_wasp');
   const collage=await page.evaluate(async sources=>{
     const images=await Promise.all(sources.map(async src=>{const image=new Image();image.src=src;await image.decode();return image;}));
     const canvas=document.createElement('canvas');canvas.width=canvas.height=600;

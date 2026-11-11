@@ -67,7 +67,15 @@ export async function classifyPhoto(photo,{signal,onProgress}={}) {
   if(signal?.aborted)throw new DOMException('Stopped','AbortError');
   const full=score(image);views.push(full.result);
   if(full.result.verdict!=='uncertain')return full.result;
-  const crops=[[.7,.5,.5],[.5,.5,.5],[.65,0,0],[.65,1,0],[.65,0,1],[.65,1,1]];
+  // Start broad, then inspect a small overlapping grid. The smaller views are
+  // important when the camera sees an insect guide, poster, or phone screen:
+  // a real insect picture may occupy only one panel of the overall photo.
+  // Every view still has to pass both independent models, and final agreement
+  // is still required below, so a single closed-set guess cannot raise an alert.
+  const crops=[
+    [.7,.5,.5],[.5,.5,.5],[.65,0,0],[.65,1,0],[.65,0,1],[.65,1,1],
+    [.42,.5,.5],[.42,0,0],[.42,1,0],[.42,0,1],[.42,1,1]
+  ];
   const canvas=document.createElement('canvas');canvas.width=224;canvas.height=224;
   const context=canvas.getContext('2d');
   for(const [index,[scale,x,y]] of crops.entries()){

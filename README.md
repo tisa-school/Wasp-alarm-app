@@ -26,7 +26,9 @@ for framing problems, not reliable automatic recognition of every collage.
 Photo identification is experimental and uses two local models. A general-image
 MobileNet model must put strong evidence on insect classes before the separate
 iNaturalist species model can return **Possible wasp** or **Possible bee**.
-If the whole photo is uncertain, Buzz checks six bounded detail crops. A crop
+If the whole photo is uncertain, Buzz checks a bounded set of broad and smaller
+overlapping detail crops. The smaller views help with photographed posters,
+guides, and screens where an insect occupies only one panel. A crop
 must pass both models and agree with another crop or the whole-photo species
 guess; conflicting wasp/bee crop guesses remain uncertain. Otherwise, the result
 explains **No wasp result** or an uncertain species match. A portrait is not a suitable insect photo; the app does not identify people.
@@ -37,10 +39,11 @@ a validated insect-presence detector, a proximity alarm, or a safety assessment.
 Never move closer to an insect to improve a photo. No distance or all-clear claim
 is supported.
 
-The fixed browser regression set currently identifies 1 of 3 wasp photos and both
+The fixed browser regression set currently identifies 2 of 3 wasp photos and both
 bee photos, rejects the cat and portrait, and leaves the dragonfly unidentified.
 The framed-photo regressions also identify the clear wasp and bee inside a
-simulated phone screen while rejecting the framed portrait and cat. These are
+simulated phone screen, identify a photographed guide containing several clear
+wasp panels, and reject the framed portrait and cat. These are
 regression checks, not an estimate of real-world accuracy. Reliable
 field detection still needs a larger, independent validation dataset.
 
