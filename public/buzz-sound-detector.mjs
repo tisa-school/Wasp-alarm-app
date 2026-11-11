@@ -7,13 +7,14 @@ function median(values){
 export function summarizeBuzzFrames(frames){
   const valid=frames.filter(frame=>Number.isFinite(frame.frequency)&&Number.isFinite(frame.level)&&Number.isFinite(frame.prominence));
   if(valid.length<8)return {verdict:'too_quiet'};
-  const audible=valid.filter(frame=>frame.level>-65);
-  if(audible.length<valid.length*.25)return {verdict:'too_quiet'};
+  const audible=valid.filter(frame=>frame.level>-58);
+  if(audible.length<valid.length*.3)return {verdict:'too_quiet'};
   // Phone speakers and microphones often shift energy to a harmonic above the
   // insect's wingbeat. Accept a wider tonal range and modest prominence, while
   // still requiring the tone to persist across many frames.
-  const candidates=audible.filter(frame=>frame.frequency>=70&&frame.frequency<=1000&&frame.prominence>=4.5);
-  if(candidates.length<valid.length*.25)return {verdict:'no_steady_buzz'};
+  const candidates=audible.filter(frame=>frame.frequency>=70&&frame.frequency<=1000&&frame.prominence>=6&&
+    frame.harmonicity>=3.5&&frame.prominence-frame.harmonicity<=30);
+  if(candidates.length<valid.length*.3)return {verdict:'no_steady_buzz'};
   const centre=median(candidates.map(frame=>frame.frequency));
   // Real insect recordings and small speakers can alternate between the
   // wingbeat and a nearby harmonic. Allow that movement while still rejecting
@@ -23,7 +24,7 @@ export function summarizeBuzzFrames(frames){
   const stable=candidates.filter(frame=>Math.abs(frame.frequency-centre)<=tolerance ||
     [frame.frequency*2,frame.frequency*3,frame.frequency/2,frame.frequency/3]
       .some(frequency=>Math.abs(frequency-centre)<=harmonicTolerance));
-  if(stable.length<valid.length*.25||stable.length<candidates.length*.6)return {verdict:'uncertain'};
+  if(stable.length<valid.length*.3||stable.length<candidates.length*.65)return {verdict:'uncertain'};
   return {verdict:'possible_buzz',frequency:Math.round(median(stable.map(frame=>frame.frequency)))};
 }
 
@@ -46,9 +47,15 @@ function frameFromSpectrum(data,sampleRate,fftSize,timeLevel=-160){
     if(Math.abs(index-peakIndex)>2&&Number.isFinite(data[index]))background.push(data[index]);
   }
   const floor=median(background);
-  // A narrow FFT bin can look quiet even when a broadband recording is loud.
-  // Use whichever measure better represents what reached the microphone.
-  return {frequency:peakIndex*hzPerBin,level:Math.max(peak,timeLevel),prominence:peak-floor};
+  const nearbyPeak=target=>{
+    if(!Number.isFinite(target)||target<1||target>=data.length-1)return -Infinity;
+    const index=Math.round(target);return Math.max(data[index-1],data[index],data[index+1]);
+  };
+  // A real wing/fan-like buzz usually contains a related harmonic. Requiring
+  // that structure prevents a quiet room or one pure tone from becoming a
+  // "buzzing heard" result merely because its frequency stays steady.
+  const related=Math.max(nearbyPeak(peakIndex/2),nearbyPeak(peakIndex*2),nearbyPeak(peakIndex*3));
+  return {frequency:peakIndex*hzPerBin,level:timeLevel,prominence:peak-floor,harmonicity:related-floor};
 }
 
 function wait(milliseconds,signal){
@@ -64,7 +71,7 @@ export async function listenForBuzz({durationMs=4500,signal,onProgress}={}){
   if(!navigator.mediaDevices?.getUserMedia)throw new DOMException('Microphone unavailable','NotSupportedError');
   let stream,context,source;
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:true},video:false});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
     if(signal?.aborted)throw new DOMException('Stopped','AbortError');
     const Audio=window.AudioContext||window.webkitAudioContext;
     if(!Audio)throw new DOMException('Audio analysis unavailable','NotSupportedError');

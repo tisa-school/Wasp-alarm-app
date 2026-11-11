@@ -112,8 +112,8 @@
       const {listenForBuzz}=await import('./buzz-sound-detector.mjs');
       const result=await listenForBuzz({signal:current.signal,onProgress:(progress,frame)=>{
         if(generation===buzzGeneration){
-          const level=Number.isFinite(frame?.level)?Math.round(Math.max(0,Math.min(100,(frame.level+75)*2.2))):0;
-          $('#buzzing-status').textContent=`Listening… ${Math.max(1,Math.ceil((1-progress)*5))} seconds · microphone level ${level}%.`;
+          const level=!Number.isFinite(frame?.level)?'very low':frame.level>-36?'strong':frame.level>-48?'medium':frame.level>-58?'low':'very low';
+          $('#buzzing-status').textContent=`Listening… ${Math.max(1,Math.ceil((1-progress)*5))} seconds · microphone input ${level}.`;
         }
       }});
       if(generation!==buzzGeneration||screen!=='buzzing')return;

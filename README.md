@@ -11,7 +11,7 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
 3. Tap **CHECK** to check one captured frame or selected photo. The first check downloads two models and the needed browser runtime assets from this same website. Subsequent checks reuse them, including offline after a completed first download.
 4. A whole photo can show **Possible wasp** or **Possible bee** only when the general insect model and species model independently agree. Rejected portraits and objects say **No wasp result**. Use **Focus on one insect** when a busy photo remains uncertain, and keep a grown-up nearby.
-5. Tap either **Listen** button, then **Start listening**, to analyze five seconds of microphone frequencies and waveform loudness on the device. A live microphone-level percentage confirms that sound is reaching the selected input. The detector can notice quieter speaker recordings and changing harmonics, but a steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
+5. Tap either **Listen** button, then **Start listening**, to analyze five seconds of microphone frequencies, harmonics, and waveform loudness on the device. A live low/medium/strong microphone indicator confirms that sound is reaching the selected input without pretending to measure physical loudness precisely. A matching buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
 6. The speaker button mutes/unmutes sound with audible confirmation tones. **Grown-ups → Test sound** plays three notes and requests Buzz's voice.
 
 If a photo contains a collage or screen borders, use **Focus on one insect**
