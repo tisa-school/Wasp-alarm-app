@@ -110,14 +110,17 @@
     $('#sound-orb').classList.add('is-listening');$('#buzz-listen').textContent='STOP LISTENING';
     try{
       const {listenForBuzz}=await import('./buzz-sound-detector.mjs');
-      const result=await listenForBuzz({signal:current.signal,onProgress:progress=>{
-        if(generation===buzzGeneration)$('#buzzing-status').textContent=`Listening… ${Math.max(1,Math.ceil((1-progress)*5))} seconds left. Do not move closer.`;
+      const result=await listenForBuzz({signal:current.signal,onProgress:(progress,frame)=>{
+        if(generation===buzzGeneration){
+          const level=Number.isFinite(frame?.level)?Math.round(Math.max(0,Math.min(100,(frame.level+75)*2.2))):0;
+          $('#buzzing-status').textContent=`Listening… ${Math.max(1,Math.ceil((1-progress)*5))} seconds · microphone level ${level}%.`;
+        }
       }});
       if(generation!==buzzGeneration||screen!=='buzzing')return;
       const outcomes={
         possible_buzz:{title:'BUZZING HEARD',message:'A steady buzzing pattern was heard. It could be an insect, fan, toy, or something else. Sound cannot confirm a wasp. Ask a grown-up to look.'},
         no_steady_buzz:{title:'NO STEADY BUZZ',message:'No steady buzzing pattern was heard. A wasp can be quiet, so this does not mean the area is safe.'},
-        too_quiet:{title:'TOO QUIET',message:'There was not enough sound to check. Do not move closer. Ask a grown-up to look.'},
+        too_quiet:{title:'TOO QUIET',message:'The microphone level stayed very low. Ask a grown-up to check the computer’s selected microphone, then try again. Do not move closer to an insect.'},
         uncertain:{title:'NOT SURE',message:'The sound changed too much to check. It cannot confirm a wasp. Ask a grown-up to look.'}
       };
       const outcome=outcomes[result.verdict]||outcomes.uncertain;

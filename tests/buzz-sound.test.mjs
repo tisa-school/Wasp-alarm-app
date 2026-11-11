@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeBuzzFrames} from '../public/buzz-sound-detector.mjs';
+import {summarizeBuzzFrames,waveformLevel} from '../public/buzz-sound-detector.mjs';
 
 const frames=(count,make)=>Array.from({length:count},(_,index)=>make(index));
 
@@ -16,6 +16,18 @@ test('A quieter speaker recording with harmonic jitter is still noticed as buzzi
     : {frequency:720+(index%5-2)*14,level:-54,prominence:7.5}));
   assert.equal(result.verdict,'possible_buzz');
   assert.ok(result.frequency>=680&&result.frequency<=760);
+});
+
+test('Speaker playback can alternate between a buzz and its harmonic',()=>{
+  const result=summarizeBuzzFrames(frames(45,index=>({frequency:index%2?190:380,level:-52,prominence:5})));
+  assert.equal(result.verdict,'possible_buzz');
+});
+
+test('Time-domain microphone level measures broadband sound instead of one FFT bin',()=>{
+  const silence=new Float32Array(256);
+  const tone=Float32Array.from({length:256},(_,index)=>.1*Math.sin(2*Math.PI*index/16));
+  assert.ok(waveformLevel(silence)<-100);
+  assert.ok(waveformLevel(tone)>-25&&waveformLevel(tone)<-20);
 });
 
 test('Quiet, broad, and changing sounds do not become buzz alerts',()=>{

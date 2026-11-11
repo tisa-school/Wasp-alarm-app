@@ -11,7 +11,7 @@ A mobile-friendly app for children and their grown-ups, with on-device insect ph
 2. **Choose a photo** opens existing image files. It is separate from the live-camera button.
 3. Tap **CHECK** to check one captured frame or selected photo. The first check downloads two models and the needed browser runtime assets from this same website. Subsequent checks reuse them, including offline after a completed first download.
 4. A whole photo can show **Possible wasp** or **Possible bee** only when the general insect model and species model independently agree. Rejected portraits and objects say **No wasp result**. Use **Focus on one insect** when a busy photo remains uncertain, and keep a grown-up nearby.
-5. Tap either **Listen** button, then **Start listening**, to analyze five seconds of microphone frequencies on the device. The wider detector can notice quieter speaker recordings and harmonics, but a steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
+5. Tap either **Listen** button, then **Start listening**, to analyze five seconds of microphone frequencies and waveform loudness on the device. A live microphone-level percentage confirms that sound is reaching the selected input. The detector can notice quieter speaker recordings and changing harmonics, but a steady buzz can come from an insect, fan, toy, or many other things; audio never confirms a wasp.
 6. The speaker button mutes/unmutes sound with audible confirmation tones. **Grown-ups → Test sound** plays three notes and requests Buzz's voice.
 
 If a photo contains a collage or screen borders, use **Focus on one insect**
@@ -59,7 +59,7 @@ The real-camera button uses `getUserMedia` after a tap. Live video requires HTTP
 
 Audio is initialized during a button tap before asynchronous photo analysis. Muting stops active tones and speech, and the preference persists. Speech depends on the device/browser's available English voices; the chime does not require speech synthesis. A silent output device cannot be diagnosed remotely. Automated tests measure generated Web Audio signals, not physical speaker output.
 
-The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained narrow buzzing pattern but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
+The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra and time-domain loudness for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained buzzing pattern and related harmonics but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
 
 Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, adds the recognized question and answer to the chat, and invites another question. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same safety chat. The chat shows a short thinking state, remembers the current safety topic for simple follow-up questions, and keeps the conversation on the page. The browser’s speech service may need internet access.
 
