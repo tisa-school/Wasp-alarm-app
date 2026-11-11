@@ -18,10 +18,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Select the installed browser
-        run: |
-          CHROMIUM_PATH="$(command -v google-chrome || command -v chromium)"
-          echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> "$GITHUB_ENV"
+      - name: Install the project browser
+        run: npx playwright install --with-deps chromium
       - run: npm run check
       - run: npm test
       - run: npm run test:pages
