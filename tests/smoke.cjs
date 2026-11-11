@@ -275,9 +275,13 @@ async function openHistory(page){
     try{
       const voicePage=await voiceContext.newPage();voicePage.on('pageerror',error=>errors.push(error.message));await voicePage.goto(base);
       const startVoice=async()=>{
-        const previousStarts=await voicePage.evaluate(()=>window.__voiceStarts);
-        await voicePage.locator('#microphone').click();
-        await voicePage.waitForFunction(previous=>window.__voiceStarts>previous&&typeof window.__voice?.onerror==='function',previousStarts);
+        const state=await voicePage.evaluate(()=>{
+          const previousStarts=window.__voiceStarts;
+          document.querySelector('#microphone').click();
+          return {previousStarts,starts:window.__voiceStarts,hasErrorHandler:typeof window.__voice?.onerror==='function'};
+        });
+        assert.equal(state.starts,state.previousStarts+1,'A mic press starts a fresh recognition session');
+        assert.equal(state.hasErrorHandler,true,'The recognition error handler is attached');
       };
       await voicePage.locator('#read').click();
       const cancellations=await voicePage.evaluate(()=>window.__cancelCount);
