@@ -150,11 +150,14 @@ async function openHistory(page){
   await check('Sound checker reports only generic buzzing and never claims a wasp from audio',async()=>{
     const soundContext=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});
     const soundPage=await soundContext.newPage();soundPage.on('pageerror',error=>errors.push(error.message));
-    await soundPage.route('**/buzz-sound-detector.mjs',route=>route.fulfill({contentType:'text/javascript',body:"export async function listenForBuzz({onProgress}){onProgress?.(1);return {verdict:'possible_buzz',frequency:190}}"}));
+    await soundPage.route('**/buzz-sound-detector.mjs',route=>route.fulfill({contentType:'text/javascript',body:"let calls=0;export async function listenForBuzz({onProgress}){onProgress?.(1);return ++calls===1?{verdict:'possible_buzz',frequency:190}:{verdict:'no_steady_buzz'}}"}));
     await soundPage.goto(base);await soundPage.locator('#listen-buzz').click();
     assert.equal(await soundPage.locator('#buzzing-screen').isVisible(),true);
     await soundPage.locator('#buzz-listen').click();await soundPage.waitForFunction(()=>document.querySelector('#buzzing-result').textContent==='BUZZING HEARD');
     assert.match(await soundPage.locator('#buzzing-status').textContent(),/cannot confirm a wasp/i);
+    assert.equal(await soundPage.locator('.app').evaluate(element=>element.classList.contains('sound-alert')),true);
+    await soundPage.locator('#buzz-listen').click();await soundPage.waitForFunction(()=>document.querySelector('#buzzing-result').textContent==='NO STEADY BUZZ');
+    assert.equal(await soundPage.locator('.app').evaluate(element=>element.classList.contains('sound-alert')),false);
     await soundPage.locator('#buzzing-screen [data-go="buzz"]').click();
     assert.equal(await soundPage.locator('#buzz-screen').isVisible(),true);await soundContext.close();
   });

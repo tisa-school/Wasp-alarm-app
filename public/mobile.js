@@ -90,7 +90,7 @@
     screen = next;updateRadar();
     app.dataset.screen=next;
     document.querySelectorAll('.screen').forEach(section => section.hidden = section.id !== `${next}-screen`);
-    app.classList.remove('alert-state','clear-state','photo-neutral');
+    app.classList.remove('alert-state','clear-state','photo-neutral','sound-alert');
     window.scrollTo({top:0,behavior:'instant'});
     const heading = $(`#${next}-screen h1`);
     heading.setAttribute('tabindex','-1'); heading.focus({preventScroll:true});
@@ -104,6 +104,7 @@
   async function startBuzzListening(){
     if(buzzController){stopBuzzListening('Listening stopped. Tap Start to try again.');return;}
     if(!navigator.mediaDevices?.getUserMedia){$('#buzzing-status').textContent='This browser cannot use the microphone. Ask a grown-up to try Safari or Chrome.';return;}
+    app.classList.remove('sound-alert');
     stopListening();sounds.stop();
     const current=new AbortController(),generation=++buzzGeneration;buzzController=current;
     $('#buzzing-result').textContent='Listening…';$('#buzzing-status').textContent='Keep the device still. Do not move closer to the sound.';
@@ -124,6 +125,7 @@
         uncertain:{title:'NOT SURE',message:'The sound changed too much to check. It cannot confirm a wasp. Ask a grown-up to look.'}
       };
       const outcome=outcomes[result.verdict]||outcomes.uncertain;
+      app.classList.toggle('sound-alert',result.verdict==='possible_buzz');
       $('#buzzing-result').textContent=outcome.title;$('#buzzing-status').textContent=outcome.message;speak(outcome.title+'. '+outcome.message);
     }catch(error){
       if(generation!==buzzGeneration||error.name==='AbortError')return;
