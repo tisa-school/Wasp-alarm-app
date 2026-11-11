@@ -274,9 +274,14 @@ async function openHistory(page){
     });
     try{
       const voicePage=await voiceContext.newPage();voicePage.on('pageerror',error=>errors.push(error.message));await voicePage.goto(base);
+      const startVoice=async()=>{
+        const previousStarts=await voicePage.evaluate(()=>window.__voiceStarts);
+        await voicePage.locator('#microphone').click();
+        await voicePage.waitForFunction(previous=>window.__voiceStarts>previous&&typeof window.__voice?.onerror==='function',previousStarts);
+      };
       await voicePage.locator('#read').click();
       const cancellations=await voicePage.evaluate(()=>window.__cancelCount);
-      await voicePage.locator('#microphone').click();
+      await startVoice();
       assert.match(await voicePage.locator('#voice-status').textContent(),/Listening/);
       assert.ok(await voicePage.evaluate(()=>window.__cancelCount)>cancellations,'Listening stops Buzz playback');
       await voicePage.evaluate(()=>window.__voice.onresult({results:[[{transcript:'I got stung'}]]}));
@@ -287,12 +292,12 @@ async function openHistory(page){
       assert.match(await voicePage.locator('.buzz-message').last().textContent(),/Tell your grown-up straight away/);
       assert.equal(await voicePage.locator('#microphone').getAttribute('aria-label'),'Ask Buzz a question using your microphone');
       for(const [error,expected] of [['not-allowed',/site settings/],['no-speech',/did not catch/],['audio-capture',/No microphone/],['network',/internet connection/]]){
-        await voicePage.locator('#microphone').click();
+        await startVoice();
         await voicePage.evaluate(error=>window.__voice.onerror({error}),error);
         assert.match(await voicePage.locator('#voice-status').textContent(),expected);
         assert.equal(await voicePage.locator('#microphone').evaluate(el=>el.classList.contains('listening')),false);
       }
-      await voicePage.locator('#microphone').click();await voicePage.evaluate(()=>window.__voice.onend());
+      await startVoice();await voicePage.evaluate(()=>window.__voice.onend());
       assert.match(await voicePage.locator('#voice-status').textContent(),/did not catch/);
       await voicePage.clock.install();
       await voicePage.locator('#microphone').click();await voicePage.clock.fastForward(15_001);
