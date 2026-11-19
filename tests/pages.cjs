@@ -62,7 +62,7 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
   console.log('PASS Sound test generates audio; mute silences the graph; enabling sound and normal button taps produce audio.');
   const cases=[
     ['natural-wasps-1.jpg',/POSSIBLEWASP/],
-    ['natural-wasps-2.jpg',/NO WASPRESULT|I’M NOTSURE/],
+    ['natural-wasps-2.jpg',/POSSIBLEWASP/],
     ['natural-wasps-3.jpg',/POSSIBLEWASP/],
     ['natural-bees-1.jpg',/POSSIBLEBEE/],
     ['natural-bees-2.jpg',/POSSIBLEBEE/],
@@ -80,8 +80,7 @@ async function audioPeak(page,duration=350){return page.evaluate(async duration=
       assert.match(await page.locator('#result-message').textContent(),/never says a person is dangerous/);
       assert.equal(await page.locator('#focus-result').isVisible(),true);
     }
-    if(file==='natural-wasps-2.jpg' && title==='I’M NOTSURE')console.log('KNOWN LIMITATION: wasp sample 2 remains uncertain.');
-    else console.log('PASS Real model:',file,'→',title);
+    console.log('PASS Real model:',file,'→',title);
   }
   console.log('Real model UI outcome: independently verified whole-photo candidates can show possible wasp or bee; uncertain photos can still use insect selection.');
   for(const [file,expected] of [['natural-wasps-3.jpg','possible_wasp'],['natural-bees-2.jpg','possible_bee'],['person.bmp','uncertain'],['cat.bmp','uncertain']]){

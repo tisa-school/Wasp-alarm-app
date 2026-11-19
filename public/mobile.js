@@ -143,6 +143,7 @@
     if(followUp&&chatTopic==='food')return 'Check open cups and cans before drinking, because a wasp can crawl inside. Put lids on sweet drinks and move away if several wasps gather.';
     if(followUp&&chatTopic==='inside')return 'Give the wasp space and keep people away from it. A grown-up can open a window or door and wait for it to leave.';
     if(followUp&&chatTopic==='space')return 'Slow, calm movement is best. Do not test how close you can get—the camera cannot measure a safe distance.';
+    if(followUp&&chatTopic==='hornet')return 'Hornets are a kind of wasp. Do not move closer to identify one. Walk away slowly and tell a grown-up, especially if several are using the same place.';
     if (/\b(hello|hi|hey|good morning|good afternoon)\b/.test(text)) {chatTopic='general';return 'Hi! I’m Buzz. I can chat about wasps, nests, stings, food, and how to stay calm. What would you like to know?';}
     if (/\b(thank you|thanks|cheers)\b/.test(text)) return 'You’re welcome! Remember: stay calm, give wasps space, and tell a grown-up when you need help.';
     if (/\b(bye|goodbye|see you)\b/.test(text)) return 'Bye for now! Stay calm, give insects space, and come back if you have another wasp-safety question.';
@@ -156,6 +157,7 @@
     if (/where.*(live|nest)|live.*where|habitat/.test(text)) {chatTopic='nest';return 'Wasps can build nests in trees, sheds, roofs, soil, or wall spaces. Never search for or touch a nest. Tell a grown-up if you notice many wasps using the same place.';}
     if (/sleep|night|dark/.test(text)) {chatTopic='nature';return 'Many wasps are less active when it is cool or dark, but you should still leave them and their nests alone. Ask a grown-up to help.';}
     if (/look like|colour|color|legs|wings|stripe/.test(text)) {chatTopic='appearance';return 'Wasps often have six legs, four wings, and yellow, black, brown, or reddish markings. Some harmless insects look similar, so do not move closer to identify one.';}
+    if (/hornet|hornets/.test(text)) {chatTopic='hornet';return 'Hornets are a kind of large wasp. Give them plenty of space, do not swat or touch a nest, walk away slowly, and tell a grown-up. The camera can only make a possible photo guess.';}
     if (/dangerous|attack|will.*sting|do.*sting/.test(text)) {chatTopic='space';return 'A wasp can sting, especially if it or its nest feels threatened. Stay calm, do not swat, walk away slowly, and tell a grown-up.';}
     if (/swat|hit|kill|squash|wave/.test(text)) {chatTopic='movement';return 'Do not swat or wave at a wasp. Keep your hands still and walk away slowly. Fast movements can make it feel threatened.';}
     if (/bee|bees|difference/.test(text)) {chatTopic='bee';return 'Bees are usually fuzzier and collect pollen. Wasps often look smoother. Do not get close to check—give both insects space and ask a grown-up.';}
@@ -268,7 +270,7 @@
       const entry = document.createElement('article');entry.className='history-card';
       const picture=document.createElement('img');picture.src='icon.svg';picture.alt='';entry.append(picture);
       const copy=document.createElement('div');
-      const names = {possible_wasp:'Possible wasp — ask a grown-up',possible_bee:'Possible bee — ask a grown-up',no_wasp_visible:'No wasp spotted — not an all clear',uncertain:'No confirmed result'};
+      const names = {possible_wasp:'Possible wasp — ask a grown-up',possible_hornet:'Possible hornet — ask a grown-up',possible_bee:'Possible bee — ask a grown-up',no_wasp_visible:'No wasp or hornet spotted — not an all clear',uncertain:'No confirmed result'};
       const label = names[item.verdict] || 'Photo · Not sure';
       const title=document.createElement('strong');title.textContent=label;copy.append(title);
       const time=document.createElement('span');time.textContent=new Date(item.time).toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});copy.append(time);
@@ -429,7 +431,7 @@
     // The local result already requires independent insect and species models.
     // Let that conservative two-model candidate reach the user. Keep requiring
     // a selected insect for server or otherwise unverified whole-photo guesses.
-    if(!photoWasFocused && ['possible_wasp','possible_bee'].includes(result?.verdict) && result?.reason!=='two_model_candidate')
+    if(!photoWasFocused && ['possible_wasp','possible_hornet','possible_bee'].includes(result?.verdict) && result?.reason!=='two_model_candidate')
       return {...result,verdict:'uncertain',reason:'needs_insect_focus'};
     return result;
   }
@@ -439,15 +441,16 @@
     $('#result-photo').src=photo;$('#result-photo').hidden=false;$('#result-wasp').hidden=true;$('#result-sun').hidden=true;
     const outcomes={
       possible_wasp:{title:'POSSIBLE<br>WASP',message:'This is only a guess about the selected area. It never means a person is dangerous. Show your grown-up.',symbol:'!',voice:'The selected area may contain a wasp. This is only a photo guess and never means a person is dangerous. Show your grown-up.'},
+      possible_hornet:{title:'POSSIBLE<br>HORNET',message:'A hornet is a kind of wasp. This is only a photo guess. Keep your distance and show your grown-up.',symbol:'!',voice:'The selected area may contain a hornet. This is only a photo guess. Keep your distance and show your grown-up.'},
       possible_bee:{title:'POSSIBLE<br>BEE',message:'This is only a guess about the selected area. It never means a person is dangerous. Show your grown-up.',symbol:'!',voice:'The selected area may contain a bee. This is only a photo guess and never means a person is dangerous. Show your grown-up.'},
-      no_wasp_visible:{title:'NOT<br>SPOTTED',message:'No wasp spotted in this photo. It could still be nearby.',symbol:'?',voice:'No wasp spotted in this photo. Buzz can miss a wasp. Stay with your grown-up.'},
+      no_wasp_visible:{title:'NOT<br>SPOTTED',message:'No wasp or hornet spotted in this photo. One could still be nearby.',symbol:'?',voice:'No wasp or hornet spotted in this photo. Buzz can miss an insect. Stay with your grown-up.'},
       uncertain:{title:'I’M NOT<br>SURE',message:'Ask your grown-up to look. Keep your distance.',symbol:'?',voice:'I am not sure about this photo. Keep your distance and ask your grown-up to look.'}
     };
-    const warning=verdict==='possible_wasp'||verdict==='possible_bee';
+    const warning=['possible_wasp','possible_hornet','possible_bee'].includes(verdict);
     const outcome={...outcomes[verdict]};
     if(reason==='insect_not_confirmed')Object.assign(outcome,{title:'NO WASP<br>RESULT',message:'Buzz could not find enough insect evidence in the whole photo. If you can already see an insect, ask a grown-up to choose Focus on one insect. This result never says a person is dangerous.',voice:'No wasp result. If you can already see an insect, ask a grown-up to choose Focus on one insect. This result never says a person is dangerous.'});
     if(reason==='needs_insect_focus')Object.assign(outcome,{title:'SELECT THE<br>INSECT',message:'No wasp warning was made. Buzz will not label a whole camera picture or a person. Ask a grown-up to select only the insect.',voice:'No wasp warning was made. I will not label a whole camera picture or a person. Ask a grown-up to select only the insect.'});
-    if(reason==='species_uncertain')Object.assign(outcome,{message:'The models could not agree on a wasp or bee. Try a clearer existing photo. Do not move closer to an insect.'});app.classList.add(warning?'alert-state':'photo-neutral');
+    if(reason==='species_uncertain')Object.assign(outcome,{message:'The models could not agree on a wasp, hornet, or bee. Try a clearer existing photo. Do not move closer to an insect.'});app.classList.add(warning?'alert-state':'photo-neutral');
     $('#result-title').innerHTML=outcome.title;$('#result-message').textContent=outcome.message;$('#result-sticker').textContent=outcome.symbol;
     // Keep the manual crop available after every result. A camera view of a
     // poster or screen may contain a clear insect that the whole-photo models
@@ -494,7 +497,7 @@
         const messages={not_configured:'Photo checks are not connected yet. Ask your grown-up to finish setup.',rate_limited:'Buzz needs a short break. Try again in a minute.'};
         $('#camera-status').textContent=messages[body.error]||'The photo could not be checked. Ask your grown-up to help, or try again.';return;
       }
-      if(!['possible_wasp','no_wasp_visible','uncertain'].includes(body.verdict))throw new Error('Invalid result');
+      if(!['possible_wasp','possible_hornet','no_wasp_visible','uncertain'].includes(body.verdict))throw new Error('Invalid result');
       const protectedBody=protectUnfocusedPhoto(body,photoWasFocused);
       photoResult(protectedBody.verdict,photo,protectedBody.reason);
     }catch{if(generation===scanGeneration && screen==='camera')$('#camera-status').textContent='Could not check this photo. You may be offline, or the photo service is unavailable. No result was made.';}
@@ -510,7 +513,7 @@
     $('#photo-consent').closest('label').hidden=true;
   }else if(localRecognition){
     $('#photo-consent').closest('label').hidden=true;
-    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first check downloads two image models and the browser runtime from this website; later checks reuse them. It can mistake other objects for insects or fail to identify a wasp. A clear insect photo works best; do not approach an insect to take one.';
+    $('#photo-privacy').textContent='Photo recognition runs on this device. Photos are not uploaded. The first check downloads two image models and the browser runtime from this website; later checks reuse them. It can mistake other objects for insects or fail to identify a wasp or hornet. A clear insect photo works best; do not approach an insect to take one.';
     $('#service-status').textContent='Experimental on-device photo identification uses two models. They can still be wrong. No API key is needed. It cannot confirm safety or measure distance.';
     $('#camera-screen .practice-badge').textContent='ON-DEVICE PHOTO CHECK · CAN BE WRONG';
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});

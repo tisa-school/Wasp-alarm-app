@@ -55,6 +55,9 @@ async function openHistory(page){
     await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('defend the area around their nest'));
     assert.match(await page.locator('.user-message').last().textContent(),/Why/);
     assert.match(await page.locator('.buzz-message').last().textContent(),/defend the area around their nest/);
+    await page.locator('#chat-input').fill('What is a hornet?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Hornets are a kind of large wasp'));
+    assert.match(await page.locator('.buzz-message').last().textContent(),/Hornets are a kind of large wasp/);
     await page.locator('#chat-close').click();
     await page.locator('#practice').click();
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
@@ -172,7 +175,7 @@ async function openHistory(page){
     await page.waitForFunction(()=>document.querySelector('#camera-status').textContent.includes('not connected'));
     assert.equal(await page.locator('#result-screen').isVisible(),false);
   });
-  await check('Photo upload and three model-response screens work (stubbed provider)',async()=>{
+  await check('Photo upload and four model-response screens work (stubbed provider)',async()=>{
     // Request routing cannot reliably intercept service-worker-owned requests.
     // Offline service-worker behavior is exercised separately above.
     await context.close();
@@ -181,7 +184,7 @@ async function openHistory(page){
     page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(base);await page.locator('#practice').click();
     await goHome(page);await page.locator('#grownups').click();await page.locator('#photo-consent').check();await page.locator('#parent-done').click();
     let uploads=0;
-    for(const verdict of ['possible_wasp','no_wasp_visible','uncertain']){
+    for(const verdict of ['possible_wasp','possible_hornet','no_wasp_visible','uncertain']){
       await page.route('**/api/scan',async route=>{
         const body=route.request().postDataJSON();assert.equal(body.consent,true);assert.match(body.image,/^data:image\/jpeg;base64,/);uploads++;
         await route.fulfill({json:{verdict,scope:'single_photo',distanceAvailable:false}});
@@ -193,19 +196,27 @@ async function openHistory(page){
       }else{
         await choosePhoto(page);
         await page.waitForFunction(()=>!document.querySelector('#captured-photo').hidden);
+        if(verdict==='possible_hornet'){
+          await page.locator('#focus-photo').click();await page.waitForFunction(()=>!document.querySelector('#focus-apply').disabled);
+          await page.locator('#focus-apply').click();
+        }
       }
       await page.locator('#check').click();await page.waitForFunction(()=>!document.querySelector('#result-screen').hidden);
       assert.match(await page.locator('#result-badge').textContent(),/ONE PHOTO/);
-      const expected={possible_wasp:/SELECT THEINSECT/,no_wasp_visible:/NOTSPOTTED/,uncertain:/I’M NOTSURE/};
+      const expected={possible_wasp:/SELECT THEINSECT/,possible_hornet:/POSSIBLEHORNET/,no_wasp_visible:/NOTSPOTTED/,uncertain:/I’M NOTSURE/};
       assert.match(await page.locator('#result-title').textContent(),expected[verdict]);
       if(verdict==='possible_wasp'){
         assert.match(await page.locator('#result-message').textContent(),/will not label a whole camera picture or a person/);
         assert.equal(await page.locator('.app').evaluate(el=>el.classList.contains('alert-state')),false);
       }
+      if(verdict==='possible_hornet'){
+        assert.match(await page.locator('#result-message').textContent(),/hornet is a kind of wasp/i);
+        assert.equal(await page.locator('.app').evaluate(el=>el.classList.contains('alert-state')),true);
+      }
       assert.equal(await page.locator('.app').evaluate(el=>el.classList.contains('clear-state')),false);
       assert.equal(await page.locator('#result-photo').isVisible(),true);await page.unroute('**/api/scan');
     }
-    assert.equal(uploads,3);
+    assert.equal(uploads,4);
   });
   await check('Radar follows camera waiting, scan progress, completion and cancellation, with reduced motion',async()=>{
     const radarContext=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});

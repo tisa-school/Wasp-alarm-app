@@ -1,19 +1,37 @@
 // Google Coral's iNaturalist insect classifier, running on this device.
 // A closed-set classifier can be confidently wrong on unfamiliar images.
 // These conservative heuristics are not a calibrated safety detector.
-const WASPS = new Set(['Dolichovespula','Ammophila','Polistes','Brachygastra','Vespula','Monobia','Sphex','Vespa','Scolia','Ancistrocerus','Sceliphron']);
+const HORNETS = new Set(['Vespa']);
+const WASPS = new Set(['Dolichovespula','Ammophila','Polistes','Brachygastra','Vespula','Monobia','Sphex','Scolia','Ancistrocerus','Sceliphron','Pelecinus','Eremnophila','Eumenes','Sphecius']);
+const WEAK_WASP_SUPPORT = new Set(['Pelecinus','Eremnophila']);
 const BEES = new Set(['Apis','Bombus','Xylocopa','Melissodes','Megachile','Anthidium']);
-function group(label) { const genus=label.split(' ')[0];return WASPS.has(genus)?'wasp':BEES.has(genus)?'bee':'other'; }
+function group(label) {
+  const genus=label.split(' ')[0];
+  if(HORNETS.has(genus)||/\bhornet\b/i.test(label))return 'hornet';
+  return WASPS.has(genus)?'wasp':BEES.has(genus)?'bee':'other';
+}
 export function summarizePredictions(predictions) {
   const valid=predictions.filter(p=>typeof p.label==='string' && Number.isFinite(p.score) && p.score>=0 && p.score<=1).sort((a,b)=>b.score-a.score);
   const top=valid[0];
   if(!top)return {verdict:'uncertain',scope:'single_photo',distanceAvailable:false};
-  const waspScore=valid.filter(p=>group(p.label)==='wasp').reduce((sum,p)=>sum+p.score,0);
+  const waspScore=valid.filter(p=>['wasp','hornet'].includes(group(p.label))).reduce((sum,p)=>sum+p.score,0);
+  const hornetScore=valid.filter(p=>group(p.label)==='hornet').reduce((sum,p)=>sum+p.score,0);
   const beeScore=valid.filter(p=>group(p.label)==='bee').reduce((sum,p)=>sum+p.score,0);
   let verdict='uncertain';
+  if(top.score>=.25 && group(top.label)==='hornet' && hornetScore>=.55 && waspScore-beeScore>=.20)verdict='possible_hornet';
   if(top.score>=.25 && group(top.label)==='wasp' && waspScore>=.55 && waspScore-beeScore>=.20)verdict='possible_wasp';
   if(top.score>=.25 && group(top.label)==='bee' && beeScore>=.55 && beeScore-waspScore>=.20)verdict='possible_bee';
   return {verdict,label:top.label,scope:'single_photo',distanceAvailable:false};
+}
+function weakWaspPrediction(predictions) {
+  const valid=predictions.filter(p=>typeof p.label==='string'&&Number.isFinite(p.score)&&p.score>=0&&p.score<=1).sort((a,b)=>b.score-a.score);
+  const top=valid[0];if(!top||top.score>.45)return undefined;
+  const wasps=valid.filter(p=>WEAK_WASP_SUPPORT.has(p.label.split(' ')[0]));
+  const bees=valid.filter(p=>group(p.label)==='bee');
+  const waspScore=wasps.reduce((sum,p)=>sum+p.score,0),beeScore=bees.reduce((sum,p)=>sum+p.score,0);
+  const best=wasps[0];
+  if(!best||best.score<.07||waspScore<.10||waspScore-beeScore<.05)return undefined;
+  return {verdict:'possible_wasp',label:best.label};
 }
 const base=new URL('./',import.meta.url);
 let enginePromise;
@@ -107,21 +125,38 @@ export function guardedPhotoResult(species,scene) {
   const insect=p=>p.index>=301 && p.index<=327;
   const top=valid.reduce((best,p)=>!best||p.score>best.score?p:best,undefined);
   const mass=valid.filter(insect).reduce((sum,p)=>sum+p.score,0);
+  const weak=weakWaspPrediction(species);
   // Reject malformed/duplicated evidence and images dominated by other classes.
-  if(indices.size!==valid.length || total>1.1 || !top || !insect(top) || top.score<.25 || mass<.85)
+  if(indices.size!==valid.length || total>1.1 || !top || !insect(top) || top.score<.25)
     return {...unverifiedPhotoResult(),reason:'insect_not_confirmed'};
+  // A weak species fallback still needs two agreeing photo views below. Allow a
+  // somewhat broader insect score for those views, while a single view remains
+  // uncertain and can never raise an alert on its own.
+  if(mass<.85){
+    if(weak&&mass>=.60)return {...unverifiedPhotoResult(),reason:'weak_species_candidate',weakVerdict:weak.verdict,label:weak.label};
+    return {...unverifiedPhotoResult(),reason:'insect_not_confirmed'};
+  }
   const candidate=summarizePredictions(species);
-  return candidate.verdict==='uncertain'
-    ? {...unverifiedPhotoResult(),reason:'species_uncertain'}
-    : {...candidate,reason:'two_model_candidate'};
+  if(candidate.verdict!=='uncertain')return {...candidate,reason:'two_model_candidate'};
+  return weak
+    ? {...unverifiedPhotoResult(),reason:'weak_species_candidate',weakVerdict:weak.verdict,label:weak.label}
+    : {...unverifiedPhotoResult(),reason:'species_uncertain'};
 }
 
 // A crop must pass both existing models. Require agreement with the full-photo
 // species guess or a second crop; conflicting wasp/bee views remain uncertain.
 export function combinePhotoViews(views,fullSpecies) {
-  const candidates=views.filter(view=>view.reason==='two_model_candidate' && ['possible_wasp','possible_bee'].includes(view.verdict));
-  const kinds=new Set(candidates.map(view=>view.verdict));
-  if(kinds.size===1 && (candidates.length>=2 || fullSpecies?.verdict===candidates[0].verdict))
-    return {...candidates[0],reason:'two_model_candidate'};
-  return {...unverifiedPhotoResult(),reason:kinds.size || views.some(view=>view.reason==='species_uncertain')?'species_uncertain':'insect_not_confirmed'};
+  const candidates=views.filter(view=>view.reason==='two_model_candidate' && ['possible_wasp','possible_hornet','possible_bee'].includes(view.verdict));
+  const weakWasps=views.filter(view=>view.reason==='weak_species_candidate'&&view.weakVerdict==='possible_wasp');
+  const bees=candidates.filter(view=>view.verdict==='possible_bee');
+  const waspFamily=candidates.filter(view=>['possible_wasp','possible_hornet'].includes(view.verdict));
+  if(bees.length&&(waspFamily.length||weakWasps.length))return {...unverifiedPhotoResult(),reason:'species_uncertain'};
+  if(bees.length&&(bees.length>=2||fullSpecies?.verdict==='possible_bee'))return {...bees[0],reason:'two_model_candidate'};
+  const hornets=waspFamily.filter(view=>view.verdict==='possible_hornet');
+  if(hornets.length&&(hornets.length>=2||fullSpecies?.verdict==='possible_hornet'))return {...hornets[0],reason:'two_model_candidate'};
+  if(waspFamily.length&&(waspFamily.length>=2||['possible_wasp','possible_hornet'].includes(fullSpecies?.verdict)))
+    return {...waspFamily[0],verdict:'possible_wasp',reason:'two_model_candidate'};
+  if((waspFamily.length&&weakWasps.length)||weakWasps.length>=2)
+    return {verdict:'possible_wasp',label:(waspFamily[0]||weakWasps[0]).label,scope:'single_photo',distanceAvailable:false,reason:'two_model_candidate'};
+  return {...unverifiedPhotoResult(),reason:candidates.length||weakWasps.length||views.some(view=>view.reason==='species_uncertain')?'species_uncertain':'insect_not_confirmed'};
 }

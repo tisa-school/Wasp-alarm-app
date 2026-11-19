@@ -5,6 +5,12 @@ test('Wasp species produce a possible-wasp result without a distance claim',()=>
   const result=summarize([{label:'Vespula vulgaris (Common Yellowjacket)',score:.8},{label:'Bombus terrestris (Buff-tailed Bumblebee)',score:.1}]);
   assert.equal(result.verdict,'possible_wasp');assert.equal(result.distanceAvailable,false);assert.equal(result.scope,'single_photo');
 });
+test('Hornet species produce a distinct possible-hornet result',()=>{
+  for(const label of ['Vespa crabro (European Hornet)','Dolichovespula maculata (Bald-faced Hornet)']){
+    const result=summarize([{label,score:.8},{label:'Apis mellifera (Honey Bee)',score:.1}]);
+    assert.equal(result.verdict,'possible_hornet');assert.equal(result.distanceAvailable,false);assert.equal(result.scope,'single_photo');
+  }
+});
 test('Bee species remain distinct from wasps',()=>{
   assert.equal(summarize([{label:'Apis mellifera (Honey Bee)',score:.8}]).verdict,'possible_bee');
 });
@@ -18,9 +24,21 @@ test('Missing, invalid, or weak scores never produce an all-clear result',()=>{
   for(const predictions of [[],[{label:'Vespula vulgaris',score:.2}],[{label:'Vespula vulgaris',score:NaN}],[{label:'Vespula vulgaris',score:2}]])assert.equal(summarize(predictions).verdict,'uncertain');
 });
 
+test('Multiple independently checked weak wasp views can support only a possible-wasp result',async()=>{
+  const {guardedPhotoResult,combinePhotoViews}=await import('../public/insect-classifier.mjs');
+  const scene=[{index:310,score:.9}];
+  const weakSpecies=[{label:'Aedes albopictus',score:.14},{label:'Pelecinus polyturator (American Pelecinid)',score:.12},{label:'Eremnophila aureonotata',score:.02}];
+  const weak=guardedPhotoResult(weakSpecies,scene);
+  assert.equal(weak.verdict,'uncertain');assert.equal(weak.reason,'weak_species_candidate');
+  assert.equal(combinePhotoViews([weak],{verdict:'uncertain'}).verdict,'uncertain');
+  assert.equal(combinePhotoViews([weak,weak],{verdict:'uncertain'}).verdict,'possible_wasp');
+  const dominantOther=guardedPhotoResult([{label:'Micrathyria hagenii',score:.7},{label:'Pelecinus polyturator',score:.1}],scene);
+  assert.equal(dominantOther.reason,'species_uncertain');
+});
+
  test('Unverified photos cannot trigger an insect alert even with a confident species guess',async()=>{
   const {unverifiedPhotoResult}=await import('../public/insect-classifier.mjs');
-  for(const label of ['Vespula vulgaris','Apis mellifera']){
+  for(const label of ['Vespula vulgaris','Vespa crabro (European Hornet)','Apis mellifera']){
     const result=unverifiedPhotoResult([{label,score:1}]);
     assert.equal(result.verdict,'uncertain');
     assert.equal(result.distanceAvailable,false);
@@ -36,6 +54,7 @@ test('A species guess needs separate general-image insect evidence',async()=>{
     assert.equal(result.verdict,'uncertain');assert.equal(result.reason,'insect_not_confirmed');
   }
   assert.equal(guardedPhotoResult(wasp,[{index:310,score:.9}]).verdict,'possible_wasp');
+  assert.equal(guardedPhotoResult([{label:'Vespa crabro (European Hornet)',score:.9}],[{index:310,score:.9}]).verdict,'possible_hornet');
   assert.equal(guardedPhotoResult([{label:'Apis mellifera',score:.9}],[{index:310,score:.9}]).verdict,'possible_bee');
   const weak=guardedPhotoResult([{label:'Vespula vulgaris',score:.2}],[{index:310,score:.9}]);
   assert.equal(weak.verdict,'uncertain');assert.equal(weak.reason,'species_uncertain');
@@ -44,12 +63,18 @@ test('A species guess needs separate general-image insect evidence',async()=>{
 test('Photo details need agreement and never bypass either model',async()=>{
   const {combinePhotoViews}=await import('../public/insect-classifier.mjs');
   const wasp={verdict:'possible_wasp',reason:'two_model_candidate',distanceAvailable:false,scope:'single_photo'};
+  const hornet={...wasp,verdict:'possible_hornet'};
   const bee={...wasp,verdict:'possible_bee'};
   const unsure={verdict:'uncertain',reason:'insect_not_confirmed'};
   assert.equal(combinePhotoViews([unsure,wasp],{verdict:'uncertain'}).verdict,'uncertain');
   assert.equal(combinePhotoViews([unsure,wasp],{verdict:'possible_wasp'}).verdict,'possible_wasp');
   assert.equal(combinePhotoViews([wasp,wasp],{verdict:'uncertain'}).verdict,'possible_wasp');
+  assert.equal(combinePhotoViews([unsure,hornet],{verdict:'possible_hornet'}).verdict,'possible_hornet');
+  assert.equal(combinePhotoViews([hornet,hornet],{verdict:'uncertain'}).verdict,'possible_hornet');
+  assert.equal(combinePhotoViews([wasp,hornet],{verdict:'possible_hornet'}).verdict,'possible_hornet');
+  assert.equal(combinePhotoViews([wasp,hornet],{verdict:'possible_wasp'}).verdict,'possible_wasp');
   assert.equal(combinePhotoViews([wasp,bee],{verdict:'possible_wasp'}).verdict,'uncertain');
+  assert.equal(combinePhotoViews([hornet,bee],{verdict:'possible_hornet'}).verdict,'uncertain');
   assert.equal(combinePhotoViews([{verdict:'possible_wasp',reason:'unverified'}],{verdict:'possible_wasp'}).verdict,'uncertain');
 });
 

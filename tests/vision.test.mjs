@@ -20,7 +20,7 @@ test('A missing key prevents any upstream request',async()=>{
   assert.equal(calls,0);
 });
 test('Provider verdicts refer only to a photo and never claim distance',async()=>{
-  for(const verdict of ['possible_wasp','no_wasp_visible','uncertain']){
+  for(const verdict of ['possible_wasp','possible_hornet','no_wasp_visible','uncertain']){
     const result=await inspectPhoto(photo,{apiKey:'unit-test-placeholder',fetcher:provider(verdict)});
     assert.deepEqual(result,{verdict,scope:'single_photo',distanceAvailable:false});
   }
