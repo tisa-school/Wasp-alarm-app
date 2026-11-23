@@ -323,7 +323,7 @@ async function openHistory(page){
         assert.equal(state.hasErrorHandler,true,'The recognition error handler is attached');
       };
       await voicePage.locator('#read').click();
-      assert.deepEqual(await voicePage.evaluate(()=>({voice:window.__lastUtterance.voice?.name,rate:window.__lastUtterance.rate,pitch:window.__lastUtterance.pitch,volume:window.__lastUtterance.volume})),{voice:'Samantha',rate:.82,pitch:1.04,volume:.82});
+      assert.deepEqual(await voicePage.evaluate(()=>({voice:window.__lastUtterance.voice?.name,rate:window.__lastUtterance.rate,pitch:window.__lastUtterance.pitch,volume:window.__lastUtterance.volume})),{voice:'Daniel',rate:.82,pitch:.84,volume:.82});
       const cancellations=await voicePage.evaluate(()=>window.__cancelCount);
       await startVoice();
       assert.match(await voicePage.locator('#voice-status').textContent(),/Listening/);

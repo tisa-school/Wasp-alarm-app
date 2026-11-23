@@ -72,11 +72,12 @@
         window.speechSynthesis.cancel();
         const message=new SpeechSynthesisUtterance(text);
         const voices=window.speechSynthesis.getVoices();
-        const friendlyNames=/\b(Samantha|Ava|Sonia|Jenny|Libby|Zira|Aria|Female)\b/i;
-        message.voice=voices.find(voice=>voice.lang?.startsWith('en')&&friendlyNames.test(voice.name))||voices.find(voice=>voice.lang?.startsWith('en'))||null;
-        // Keep Buzz warm and friendly, with softer volume, gentler pitch, and
-        // a relaxed pace. The exact voice depends on the device.
-        message.lang=message.voice?.lang||'en-US';message.rate=.82;message.pitch=1.04;message.volume=.82;
+        const englishVoices=voices.filter(voice=>voice.lang?.startsWith('en'));
+        const manVoiceNames=/\b(Daniel|Alex|Arthur|Aaron|Albert|Brian|David|Eddy|Fred|George|Gordon|Guy|James|Junior|Lee|Liam|Male|Mark|Matthew|Oliver|Paul|Ralph|Reed|Rishi|Rocko|Ryan|Sean|Tom)\b/i;
+        message.voice=englishVoices.find(voice=>manVoiceNames.test(voice.name))||englishVoices.find(voice=>/^en-(GB|IE|ZA|IN)\b/i.test(voice.lang))||englishVoices[0]||null;
+        // Prefer a man's voice while keeping the volume soft and pace relaxed.
+        // The exact installed voice still depends on the device.
+        message.lang=message.voice?.lang||'en-GB';message.rate=.82;message.pitch=.84;message.volume=.82;
         message.onend=()=>{if(this.utterance===message)this.utterance=undefined;};
         message.onerror=event=>{
           if(this.utterance!==message)return;
