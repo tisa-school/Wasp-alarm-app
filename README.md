@@ -63,7 +63,7 @@ The sound checker requests the microphone after Start is tapped, ignores the but
 
 Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, adds the recognized question and answer to the chat, and invites another question. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same chat. Picture prompts provide three large starter questions, and typed questions receive contextual picture markers. When the server AI key is configured, Buzz answers general child-safe questions with a short ChatGPT response and recent conversation context. If the service is unavailable, the app falls back to its reviewed local insect-safety answers. The browser’s speech service and ChatGPT replies may need internet access.
 
-Buzz’s speaking voice prefers a friendly English voice supplied by the device, then uses any available English voice. The app sets a clear, slightly higher pitch and measured pace, but the exact sound still differs between phones, computers, and browsers.
+Buzz’s speaking voice prefers an English man's voice supplied by the device, then uses any available English voice. The app sets a lower pitch and measured pace, but the exact sound still differs between phones, computers, and browsers.
 
 ## Privacy
 
