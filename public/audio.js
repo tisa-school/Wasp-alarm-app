@@ -72,11 +72,11 @@
         window.speechSynthesis.cancel();
         const message=new SpeechSynthesisUtterance(text);
         const voices=window.speechSynthesis.getVoices();
-        const manVoiceNames=/\b(Daniel|Alex|Arthur|Aaron|Fred|George|James|Ryan|David|Mark|Paul|Tom|Lee|Guy|Male)\b/i;
-        message.voice=voices.find(voice=>voice.lang?.startsWith('en')&&manVoiceNames.test(voice.name))||voices.find(voice=>voice.lang?.startsWith('en'))||null;
-        // Prefer a clear English man's voice and use a lower pitch. The exact
-        // voice still depends on what the phone or computer provides.
-        message.lang=message.voice?.lang||'en-GB';message.rate=.9;message.pitch=.86;
+        const friendlyNames=/\b(Samantha|Ava|Sonia|Jenny|Libby|Zira|Aria|Female)\b/i;
+        message.voice=voices.find(voice=>voice.lang?.startsWith('en')&&friendlyNames.test(voice.name))||voices.find(voice=>voice.lang?.startsWith('en'))||null;
+        // Restore Buzz's original warm, friendly voice. The exact voice still
+        // depends on what the phone or computer provides.
+        message.lang=message.voice?.lang||'en-US';message.rate=.88;message.pitch=1.2;
         message.onend=()=>{if(this.utterance===message)this.utterance=undefined;};
         message.onerror=event=>{
           if(this.utterance!==message)return;
