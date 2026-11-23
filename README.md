@@ -3,7 +3,7 @@
 Experimental interface branch based on the supplied Wasp Buddy phone designs.
 It is intended for a separate Vercel preview and does not replace the main app.
 
-A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, a five-second buzzing-pattern checker, spoken guidance, large buttons, and sound controls. It opens on the original **Talk to Buzz** screen, with safety questions, optional voice questions, camera, and sound-checker buttons.
+A mobile-friendly app for children and their grown-ups, with on-device insect photo checks, a five-second buzzing-pattern checker, spoken guidance, large buttons, sound controls, and **ChatGPT with Buzz**. It opens on the original **Talk to Buzz** screen, with typed or spoken questions, picture prompts, camera, and sound-checker buttons.
 
 ## Use it
 
@@ -39,7 +39,7 @@ a validated insect-presence detector, a proximity alarm, or a safety assessment.
 Never move closer to an insect to improve a photo. No distance or all-clear claim
 is supported.
 
-The fixed browser regression set currently identifies 2 of 3 wasp photos and both
+The fixed browser regression set currently identifies all 3 wasp photos and both
 bee photos, rejects the cat and portrait, and leaves the dragonfly unidentified.
 The framed-photo regressions also identify the clear wasp and bee inside a
 simulated phone screen, identify a photographed guide containing several clear
@@ -61,13 +61,15 @@ Audio is initialized during a button tap before asynchronous photo analysis. Mut
 
 The sound checker requests the microphone after Start is tapped, ignores the button tone, samples frequency spectra and time-domain loudness for five seconds, and stops/releases the microphone on completion, cancellation, navigation, or app hiding. It can notice a sustained buzzing pattern and related harmonics but cannot distinguish a wasp from a bee, fan, toy, speech, or other noise. It never provides an all-clear or distance claim.
 
-Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, adds the recognized question and answer to the chat, and invites another question. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same safety chat. The chat shows a short thinking state, remembers the current safety topic for simple follow-up questions, and keeps the conversation on the page. The browser’s speech service may need internet access.
+Voice questions: tap the large microphone and ask in English. That explicit tap starts the browser’s permission flow. Buzz stops playback while listening, adds the recognized question and answer to the chat, and invites another question. Listening times out after 15 seconds and stops on navigation. If speech recognition is unavailable, **Type** opens the same chat. Picture prompts provide three large starter questions, and typed questions receive contextual picture markers. When the server AI key is configured, Buzz answers general child-safe questions with a short ChatGPT response and recent conversation context. If the service is unavailable, the app falls back to its reviewed local insect-safety answers. The browser’s speech service and ChatGPT replies may need internet access.
+
+Buzz’s speaking voice prefers a friendly English voice supplied by the device, then uses any available English voice. The app sets a clear, slightly higher pitch and measured pace, but the exact sound still differs between phones, computers, and browsers.
 
 ## Privacy
 
 Default photo recognition stays on the device. Camera frames and selected photos are not uploaded, recorded, or included in history. The camera stops on leaving its screen or hiding the app. Only up to 20 result labels/timestamps and preferences are kept in local storage, which can be cleared. The website downloads the model and runtime when first needed. The service worker caches assets, never camera images or API responses.
 
-The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions start only after the microphone is tapped and use the browser's speech service, which may send audio to its provider. Typed questions and the conversation history stay in the page and disappear on reload. Buzz uses a small reviewed wasp-safety guide with simple contextual follow-ups; it is not unrestricted AI. No analytics or external fonts are loaded.
+The buzzing checker analyzes frequency snapshots in memory on the device. It does not save or upload microphone audio. Optional voice questions start only after the microphone is tapped and use the browser's speech service, which may send audio to its provider. When AI chat is configured, the typed question or voice transcript plus up to eight recent chat messages are sent through this app's same-origin server to OpenAI. The API key stays on the server, the app does not save conversations, and chat disappears on reload. Do not include a child's name or other private information. If AI chat is unavailable, the reviewed local safety guide answers without uploading the question. No analytics or external fonts are loaded.
 
 ## Run locally
 
@@ -94,7 +96,7 @@ npm run deploy:pages
 
 GitHub Pages currently publishes the **gh-pages** branch at its root. `deploy:pages` builds and pushes a new static publishing commit using an alternate Git index, preserving the source checkout and deployment history. Commit source changes first. It requires Git write access and never force-pushes. The main-branch workflow checks the app; it does not change repository Pages settings or publish over the branch deployment.
 
-Vercel can also serve `dist/web/` using the included configuration. No public Vercel deployment was performed here. Publishing a cloud development environment is separate from deploying this website.
+Vercel can serve `dist/web/` and the same-origin `/api/chat` function using the included configuration. Set `WASP_CHAT_API_KEY` as a Vercel server environment variable (or reuse `OPENAI_API_KEY` / `WASP_VISION_API_KEY`), then redeploy. `WASP_CHAT_MODEL` optionally overrides the default `gpt-4.1-mini`. Never put an API key in `public/`, `runtime-config.js`, or a browser-exposed variable. The public app is currently expected at `https://wasp-alarm-app.vercel.app/`; deployment ownership and alias configuration still belong to the Vercel project.
 
 The optional older server recognizer remains available via `/api/scan`. To deliberately use it, configure `recognition: 'server'` in runtime-config and set `WASP_VISION_API_KEY` securely on the server (or reuse an existing `OPENAI_API_KEY`). That mode sends photos to OpenAI only after separate adult photo-upload consent and an explicit Check. It is not used by the default app and has no configured key here. Public server deployments require access protection and durable authenticated rate limits.
 
@@ -108,6 +110,6 @@ CHROMIUM_PATH=/usr/bin/chromium npm run test:pages
 
 Install Playwright Chromium if no local browser is available (`npx playwright install chromium`). Tests need curl for one-time downloads of pinned public image fixtures. Fixtures are SHA-256 checked in `.test-fixtures/`, ignored by Git, and never copied to the website. Fixture source URLs and hashes are in `tests/model-fixtures.json`; wasp/bee sample images are from johnSMUpark/bees, and neutral fixtures are from Google Coral.
 
-Unit/backend checks cover class grouping, uncertainty, image restrictions, missing credentials, provider failure, consent, origin checks, and request limits. Browser checks cover both camera controls, actual generated audio and mute behavior, real model inference on fixed photographs, offline inference, and honest failure without fake results. The server-provider tests use a stub; the on-device model tests execute the real model.
+Unit/backend checks cover class grouping, uncertainty, image restrictions, missing credentials, provider failure, consent, origin checks, chat context, and request limits. Browser checks cover picture chat prompts, a stubbed general ChatGPT answer, local chat fallback, the preferred speaking voice, both camera controls, actual generated audio and mute behavior, real model inference on fixed photographs, offline inference, and honest failure without fake results. Server-provider tests use stubs; the on-device model tests execute the real model.
 
 See `public/THIRD-PARTY.md` and `public/models/provenance.json` for the unmodified model's pinned source, license, and hashes. Dependencies have lockfile integrity checks. Do not disable hash or TLS verification to work around an installation failure.

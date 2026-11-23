@@ -25,6 +25,8 @@
   let buzzController;
   let buzzGeneration = 0;
   let chatGeneration = 0;
+  let chatController;
+  let chatHistory = [];
   let chatTopic = 'general';
   let practiceHistory = [];
   try { voiceAllowed = localStorage.getItem('buzz-voice-allowed') === 'yes';
@@ -136,7 +138,10 @@
     }
   }
   function answer(question) {
-    const text = question.toLowerCase();
+    const text = question.toLowerCase().replace(/[^a-z0-9'’\s?!-]/g,' ').replace(/\s+/g,' ').trim();
+    const mentionsWasp=/\b(wasp|wasps|yellowjacket|yellowjackets)\b/.test(text);
+    const mentionsHornet=/\b(hornet|hornets)\b/.test(text);
+    const mentionsWaspFamily=mentionsWasp||mentionsHornet;
     const followUp=/\b(why|more|then|next|else|really|how come)\b/.test(text);
     if(followUp&&chatTopic==='nest')return 'Wasps may defend the area around their nest. That is why you should leave it alone, walk away slowly, and let a trained adult handle it.';
     if(followUp&&chatTopic==='sting')return 'A grown-up should watch how you feel after a sting. Trouble breathing, faintness, or swelling of the mouth or throat means emergency help is needed.';
@@ -144,51 +149,107 @@
     if(followUp&&chatTopic==='inside')return 'Give the wasp space and keep people away from it. A grown-up can open a window or door and wait for it to leave.';
     if(followUp&&chatTopic==='space')return 'Slow, calm movement is best. Do not test how close you can get—the camera cannot measure a safe distance.';
     if(followUp&&chatTopic==='hornet')return 'Hornets are a kind of wasp. Do not move closer to identify one. Walk away slowly and tell a grown-up, especially if several are using the same place.';
-    if (/\b(hello|hi|hey|good morning|good afternoon)\b/.test(text)) {chatTopic='general';return 'Hi! I’m Buzz. I can chat about wasps, nests, stings, food, and how to stay calm. What would you like to know?';}
+    if (/\b(hello|hi|hey|good morning|good afternoon)\b/.test(text)) {chatTopic='general';return 'Hi! I’m Buzz. I can chat about wasps, hornets, nests, stings, food, and other insects. What would you like to know?';}
     if (/\b(thank you|thanks|cheers)\b/.test(text)) return 'You’re welcome! Remember: stay calm, give wasps space, and tell a grown-up when you need help.';
     if (/\b(bye|goodbye|see you)\b/.test(text)) return 'Bye for now! Stay calm, give insects space, and come back if you have another wasp-safety question.';
     if (/who are you|what are you|your name|are you (an )?ai/.test(text)) {chatTopic='general';return 'I’m Buzz, the app’s friendly safety helper. I use a small reviewed guide rather than a full AI brain, but I can still chat about common wasp-safety questions.';}
     if (/how are you|how do you feel/.test(text)) return 'I’m ready to help! Ask me something about wasps or staying safe.';
+    if (/favorite|favourite/.test(text)&&/colou?r/.test(text))return 'My favorite colors are sunny yellow and black—just like my stripes! What colors do you like?';
+    if (/tell.*joke|know.*joke|make me laugh|joke/.test(text))return 'Why did the wasp bring a tiny suitcase? It was ready to buzz off!';
+    if (/\b(yes|yeah|yep|okay|ok|cool)\b[!.]*$/.test(text))return 'Okay! I’m listening. You can tell me something or ask another insect question.';
     if (/can('|’)t breathe|cannot breathe|breathing|throat|mouth|allerg|emergency/.test(text)) {chatTopic='emergency';return 'Tell a grown-up now. Trouble breathing, faintness, or swelling of the mouth or throat after a sting needs emergency medical help.';}
     if (/stung|sting|hurt|ouch/.test(text)) {chatTopic='sting';return 'Tell your grown-up straight away if you get stung. Walk away from the insect. A grown-up can wash the area and watch for a serious reaction.';}
     if (/nest|hive|roof|attic|hole/.test(text)) {chatTopic='nest';return 'Do not touch or block a wasp nest. Walk away slowly and tell a grown-up. A trained adult should decide what to do.';}
     if (/inside|indoors|room|house|window|car/.test(text)) {chatTopic='inside';return 'Stay calm, move away, and tell a grown-up. Do not trap or swat the wasp. A grown-up can open a safe way outside.';}
-    if (/food|drink|juice|sweet|picnic|bin|trash/.test(text)) {chatTopic='food';return 'Wasps may visit sweet food, drinks, and bins. Cover drinks, look before you sip, put food away, and tell a grown-up if wasps gather nearby.';}
+    if (/food|drink|juice|sweet|picnic|bin|trash/.test(text)&&!(mentionsWaspFamily&&/what|eat/.test(text))) {chatTopic='food';return 'Wasps may visit sweet food, drinks, and bins. Cover drinks, look before you sip, put food away, and tell a grown-up if wasps gather nearby.';}
     if (/where.*(live|nest)|live.*where|habitat/.test(text)) {chatTopic='nest';return 'Wasps can build nests in trees, sheds, roofs, soil, or wall spaces. Never search for or touch a nest. Tell a grown-up if you notice many wasps using the same place.';}
     if (/sleep|night|dark/.test(text)) {chatTopic='nature';return 'Many wasps are less active when it is cool or dark, but you should still leave them and their nests alone. Ask a grown-up to help.';}
     if (/look like|colour|color|legs|wings|stripe/.test(text)) {chatTopic='appearance';return 'Wasps often have six legs, four wings, and yellow, black, brown, or reddish markings. Some harmless insects look similar, so do not move closer to identify one.';}
-    if (/hornet|hornets/.test(text)) {chatTopic='hornet';return 'Hornets are a kind of large wasp. Give them plenty of space, do not swat or touch a nest, walk away slowly, and tell a grown-up. The camera can only make a possible photo guess.';}
+    if (mentionsWaspFamily&&/\b(cute|pretty|beautiful|adorable|cool|amazing|awesome|lovely|love|like)\b/.test(text)) {chatTopic=mentionsHornet?'hornet':'nature';return `${mentionsHornet?'Hornets':'Wasps'} can look cute and fascinating, especially in a picture! Enjoy looking from far away, because real ${mentionsHornet?'hornets':'wasps'} still need lots of space.`;}
+    if (mentionsWaspFamily&&/\b(scary|ugly|gross|hate|horrible|bad)\b/.test(text)) {chatTopic='fear';return `It is okay to feel that way. ${mentionsHornet?'Hornets':'Wasps'} are wild insects, so give them space, stay calm, and find a grown-up if you are worried.`;}
+    if (mentionsWaspFamily&&/what.*eat|eat.*what|food do/.test(text)) {chatTopic='nature';return `${mentionsHornet?'Hornets':'Many wasps'} hunt flies, caterpillars, and other insects. Adults may also drink flower nectar or visit sweet food. Watch from far away and keep food covered.`;}
+    if (mentionsWaspFamily&&/queen|colony|family|live together|social/.test(text)) {chatTopic='nest';return 'Some wasps and hornets live in colonies with a queen, workers, and a nest. Other wasps live alone. Never touch a nest—tell a grown-up where it is.';}
+    if (mentionsWaspFamily&&/how (long|old)|lifespan|live for/.test(text)) {chatTopic='nature';return 'It depends on the species. Many worker wasps live for only weeks, while a queen may survive long enough to start a new colony after winter.';}
+    if (mentionsWaspFamily&&/make honey|honey/.test(text)) {chatTopic='food';return 'Most wasps and hornets do not make honey like honey bees. They may drink nectar and help flowers, but they usually hunt other insects too.';}
+    if (mentionsWaspFamily&&/baby|babies|larva|larvae|egg/.test(text)) {chatTopic='nest';return 'Young wasps begin as eggs, then grow as larvae inside a nest before becoming adults. Look only from far away and never open a nest.';}
+    if (mentionsHornet) {chatTopic='hornet';return 'Hornets are a kind of large wasp. Give them plenty of space, do not swat or touch a nest, walk away slowly, and tell a grown-up. The camera can only make a possible photo guess.';}
     if (/dangerous|attack|will.*sting|do.*sting/.test(text)) {chatTopic='space';return 'A wasp can sting, especially if it or its nest feels threatened. Stay calm, do not swat, walk away slowly, and tell a grown-up.';}
     if (/swat|hit|kill|squash|wave/.test(text)) {chatTopic='movement';return 'Do not swat or wave at a wasp. Keep your hands still and walk away slowly. Fast movements can make it feel threatened.';}
     if (/bee|bees|difference/.test(text)) {chatTopic='bee';return 'Bees are usually fuzzier and collect pollen. Wasps often look smoother. Do not get close to check—give both insects space and ask a grown-up.';}
-    if (/why|good|help|eat|garden/.test(text)) {chatTopic='nature';return 'Wasps help gardens by hunting other insects and some also pollinate flowers. We can respect them by giving them space.';}
+    if (/\b(ant|ants)\b/.test(text)) {chatTopic='other-insect';return 'Ants are social insects that often live in colonies. Watch them without touching their nest, and ask a grown-up for help if they are indoors or biting.';}
+    if (/butterfl|caterpillar/.test(text)) {chatTopic='other-insect';return 'Butterflies begin as caterpillars and later grow wings. You can watch them gently without touching or chasing them.';}
+    if (/ladybug|ladybird/.test(text)) {chatTopic='other-insect';return 'Ladybugs are beetles. Many eat tiny plant pests called aphids, which can help gardens.';}
+    if (/dragonfl/.test(text)) {chatTopic='other-insect';return 'Dragonflies are flying insects that hunt mosquitoes and other small insects. They are not wasps and usually do not sting people.';}
+    if (/spider/.test(text)) {chatTopic='other-insect';return 'Spiders have eight legs, so they are not insects. Give unknown spiders space and ask a grown-up before touching one.';}
+    if (mentionsWaspFamily&&/why|good|help|garden/.test(text)) {chatTopic='nature';return 'Wasps help gardens by hunting other insects and some also pollinate flowers. We can respect them by giving them space.';}
     if (/scared|afraid|fear/.test(text)) {chatTopic='fear';return 'It is okay to feel scared. Take a slow breath. Walk away slowly, and find your grown-up. They can help!';}
     if (/space|near|close|distance|metre|meter|wasp|walk|safe/.test(text)) {chatTopic='space';return 'Give wasps lots of space. Keep your hands still, walk away slowly, and tell a grown-up. The camera cannot measure distance or say an area is safe.';}
     chatTopic='general';
-    return 'I can help with wasp safety. Ask what to do near a wasp, near a nest, around food, inside a room, or after a sting.';
+    if (/\?$|^(who|what|where|when|why|how|can|could|do|does|is|are|will|would)\b/.test(text))return 'I do not know that one yet. I know most about wasps, hornets, other common insects, and staying safe. Try asking me an insect question!';
+    return 'Thanks for telling me! I’m listening. You can ask me about wasps, hornets, other common insects, or staying safe.';
   }
-  function addChatMessage(role,text,{thinking=false}={}){
+  function pictureForMessage(text){
+    const value=String(text||'').toLowerCase();
+    if(/sting|stung|hurt|ouch|allerg|breath|medical/.test(value))return {symbol:'🩹',label:'First aid picture'};
+    if(/nest|hive|queen|colony|roof|attic/.test(value))return {symbol:'🏠',label:'Nest safety picture'};
+    if(/hornet/.test(value))return {symbol:'🔎',label:'Hornet question picture'};
+    if(/wasp|bee|buzz|insect/.test(value))return {symbol:'🐝',label:'Flying insect picture'};
+    if(/\bant/.test(value))return {symbol:'🐜',label:'Ant picture'};
+    if(/butterfl|caterpillar/.test(value))return {symbol:'🦋',label:'Butterfly picture'};
+    if(/ladybug|ladybird/.test(value))return {symbol:'🐞',label:'Ladybug picture'};
+    if(/spider/.test(value))return {symbol:'🕷️',label:'Spider picture'};
+    if(/food|eat|drink|juice|picnic/.test(value))return {symbol:'🧃',label:'Food and drink picture'};
+    if(/scared|afraid|fear|worried/.test(value))return {symbol:'💛',label:'Kind heart picture'};
+    if(/color|colour|draw|paint|art/.test(value))return {symbol:'🎨',label:'Art picture'};
+    if(/joke|funny|laugh/.test(value))return {symbol:'😄',label:'Happy face picture'};
+    if(/school|homework|learn/.test(value))return {symbol:'✏️',label:'Learning picture'};
+    if(/sky|sun|cloud|weather/.test(value))return {symbol:'🌤️',label:'Sky picture'};
+    return {symbol:'💭',label:'Question picture'};
+  }
+  function addChatMessage(role,text,{thinking=false,pictureText=text}={}){
     const message=document.createElement('div');message.className=`chat-message ${role==='user'?'user-message':'buzz-message'}${thinking?' thinking-message':''}`;
     const name=document.createElement('strong');name.textContent=role==='user'?'You':'Buzz';
     const copy=document.createElement('p');copy.textContent=text;
-    message.append(name,copy);$('#chat-log').append(message);
+    const body=document.createElement('div');body.className='chat-message-body';
+    const picture=document.createElement('span');picture.className='chat-picture';
+    if(role==='buzz'){
+      picture.classList.add('buzz-picture');const image=document.createElement('img');image.src='icon.svg';image.alt='';picture.append(image);
+    }else{
+      const visual=pictureForMessage(pictureText);picture.textContent=visual.symbol;picture.setAttribute('role','img');picture.setAttribute('aria-label',visual.label);
+    }
+    body.append(picture,copy);message.append(name,body);$('#chat-log').append(message);
     $('#chat-log').scrollTop=$('#chat-log').scrollHeight;
     return message;
   }
   function wait(milliseconds){return new Promise(resolve=>setTimeout(resolve,milliseconds));}
+  async function askChatGPT(message,history,signal){
+    if(!/^https?:$/.test(location.protocol))return undefined;
+    try{
+      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history}),signal});
+      if(!response.ok)return undefined;
+      const body=await response.json();
+      return typeof body.reply==='string'&&body.reply.trim()?body.reply.trim().slice(0,700):undefined;
+    }catch{return undefined;}
+  }
   async function tellBuzz(question,{source='button'}={}) {
     const clean=String(question||'').trim().slice(0,200);if(!clean)return;
-    stopListening();
+    stopListening();chatController?.abort();
     document.querySelectorAll('.thinking-message').forEach(message=>message.remove());
     addChatMessage('user',clean);
     const generation=++chatGeneration;
+    const previous=chatHistory.slice(-8),fallback=answer(clean);
+    chatHistory.push({role:'user',content:clean});chatHistory=chatHistory.slice(-12);
+    const current=new AbortController();chatController=current;
     $('#speech').textContent='Buzz is thinking…';
     $('#voice-status').textContent='Buzz is thinking…';
     const thinking=addChatMessage('buzz','Thinking…',{thinking:true});
-    await wait(420);
+    const timer=setTimeout(()=>current.abort(),20_000);
+    const [,remote]=await Promise.all([wait(420),askChatGPT(clean,previous,current.signal)]);
+    clearTimeout(timer);
     if(generation!==chatGeneration)return;
-    const reply=answer(clean);thinking.remove();
-    addChatMessage('buzz',reply);
+    chatController=undefined;const reply=remote||fallback;thinking.remove();
+    chatHistory.push({role:'assistant',content:reply});chatHistory=chatHistory.slice(-12);
+    addChatMessage('buzz',reply,{pictureText:clean+' '+reply});
     $('#speech').textContent=reply;
     $('#voice-status').textContent=source==='voice'?'Buzz answered. Tap the mic to keep chatting.':'Buzz answered. Ask me another question!';
     speak(reply);
@@ -517,7 +578,7 @@
     $('#service-status').textContent='Experimental on-device photo identification uses two models. They can still be wrong. No API key is needed. It cannot confirm safety or measure distance.';
     $('#camera-screen .practice-badge').textContent='ON-DEVICE PHOTO CHECK · CAN BE WRONG';
   }else if(/^https?:$/.test(location.protocol))fetch('/api/status',{cache:'no-store'}).then(response=>response.json()).then(status=>{$('#service-status').textContent=status.configured?'A photo service key is configured. Checks require an internet connection and may incur provider charges.':'Photo checks are not connected. An adult needs to set WASP_VISION_API_KEY on this app’s server.';}).catch(()=>{$('#service-status').textContent='Photo service unavailable. Ask your grown-up to check the server connection.';});
-  function pause(){cancelScan();stopBuzzListening();stopListening();stopCamera();sounds.stop();navigator.vibrate?.(0);}
+  function pause(){cancelScan();stopBuzzListening();stopListening();chatController?.abort();chatController=undefined;stopCamera();sounds.stop();navigator.vibrate?.(0);}
   window.addEventListener('pagehide',pause);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();else updateRadar();});
 })();

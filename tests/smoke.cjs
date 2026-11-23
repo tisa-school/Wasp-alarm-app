@@ -47,7 +47,21 @@ async function openHistory(page){
     assert.equal(await page.locator('#parent-dialog').evaluate(el=>el.open),false);
     assert.match(await page.locator('#voice-status').textContent(),/Voice questions are unavailable|Starting microphone|Listening|No microphone/);
     if(await page.locator('#chat-dialog').evaluate(el=>el.open))await page.locator('#chat-close').click();
-    await page.locator('#type-question').click();await page.locator('#chat-input').fill('What should I do near a nest?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.locator('#type-question').click();
+    assert.equal(await page.locator('.chat-idea-picture').count(),3);
+    assert.equal(await page.locator('.buzz-message .buzz-picture img').first().count(),1);
+    let aiRequest;
+    await page.route('**/api/chat',async route=>{
+      aiRequest=route.request().postDataJSON();
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'Sunlight has many colors. Blue light spreads through the air, so the sky often looks blue.'})});
+    });
+    await page.locator('#chat-input').fill('Why is the sky blue?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Blue light'));
+    assert.equal(aiRequest.message,'Why is the sky blue?');
+    assert.equal(await page.locator('.user-message .chat-picture').last().textContent(),'🌤️');
+    assert.match(await page.locator('.buzz-message').last().textContent(),/sky often looks blue/);
+    await page.unroute('**/api/chat');
+    await page.locator('#chat-input').fill('What should I do near a nest?');await page.locator('#chat-form button[type="submit"]').click();
     await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Do not touch or block a wasp nest'));
     assert.match(await page.locator('.user-message').last().textContent(),/What should I do near a nest/);
     assert.match(await page.locator('.buzz-message').last().textContent(),/Do not touch or block a wasp nest/);
@@ -58,6 +72,20 @@ async function openHistory(page){
     await page.locator('#chat-input').fill('What is a hornet?');await page.locator('#chat-form button[type="submit"]').click();
     await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Hornets are a kind of large wasp'));
     assert.match(await page.locator('.buzz-message').last().textContent(),/Hornets are a kind of large wasp/);
+    await page.locator('#chat-input').fill('Hornets are cute');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('can look cute and fascinating'));
+    assert.match(await page.locator('.buzz-message').last().textContent(),/look cute.*from far away/i);
+    await page.locator('#chat-input').fill('What do hornets eat?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('hunt flies'));
+    assert.match(await page.locator('.buzz-message').last().textContent(),/caterpillars.*nectar/i);
+    await page.locator('#chat-input').fill('Tell me about ants');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Ants are social insects'));
+    await page.locator('#chat-input').fill('What is your favorite color?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('sunny yellow and black'));
+    await page.locator('#chat-input').fill('Can you help with my homework?');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('I do not know that one yet'));
+    await page.locator('#chat-input').fill('I made a drawing today');await page.locator('#chat-form button[type="submit"]').click();
+    await page.waitForFunction(()=>document.querySelector('#speech').textContent.includes('Thanks for telling me'));
     await page.locator('#chat-close').click();
     await page.locator('#practice').click();
     assert.equal(await page.locator('#camera-screen').isVisible(),true);
@@ -281,7 +309,7 @@ async function openHistory(page){
       }
       window.SpeechRecognition=FakeRecognition;
       Object.defineProperty(window,'SpeechSynthesisUtterance',{value:class{constructor(text){this.text=text;}}});
-      Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],resume(){},cancel(){window.__cancelCount++;},speak(message){window.__spoken.push(message.text);window.__lastUtterance=message;}}});
+      Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Samantha',lang:'en-US'},{name:'Daniel',lang:'en-GB'}],resume(){},cancel(){window.__cancelCount++;},speak(message){window.__spoken.push(message.text);window.__lastUtterance=message;}}});
     });
     try{
       const voicePage=await voiceContext.newPage();voicePage.on('pageerror',error=>errors.push(error.message));await voicePage.goto(base);
@@ -295,6 +323,7 @@ async function openHistory(page){
         assert.equal(state.hasErrorHandler,true,'The recognition error handler is attached');
       };
       await voicePage.locator('#read').click();
+      assert.deepEqual(await voicePage.evaluate(()=>({voice:window.__lastUtterance.voice?.name,rate:window.__lastUtterance.rate,pitch:window.__lastUtterance.pitch})),{voice:'Samantha',rate:.88,pitch:1.2});
       const cancellations=await voicePage.evaluate(()=>window.__cancelCount);
       await startVoice();
       assert.match(await voicePage.locator('#voice-status').textContent(),/Listening/);

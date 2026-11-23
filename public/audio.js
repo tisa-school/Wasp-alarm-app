@@ -72,8 +72,11 @@
         window.speechSynthesis.cancel();
         const message=new SpeechSynthesisUtterance(text);
         const voices=window.speechSynthesis.getVoices();
-        message.voice=voices.find(voice=>voice.lang==='en-GB')||voices.find(voice=>voice.lang?.startsWith('en'))||null;
-        message.lang=message.voice?.lang||'en-GB';message.rate=.83;message.pitch=1.08;
+        const friendlyNames=/\b(Samantha|Ava|Sonia|Jenny|Libby|Zira|Aria|Female)\b/i;
+        message.voice=voices.find(voice=>voice.lang?.startsWith('en')&&friendlyNames.test(voice.name))||voices.find(voice=>voice.lang?.startsWith('en'))||null;
+        // A warm, slightly higher voice is easier for young children to follow.
+        // The exact voice still depends on what the phone or computer provides.
+        message.lang=message.voice?.lang||'en-US';message.rate=.88;message.pitch=1.2;
         message.onend=()=>{if(this.utterance===message)this.utterance=undefined;};
         message.onerror=event=>{
           if(this.utterance!==message)return;
