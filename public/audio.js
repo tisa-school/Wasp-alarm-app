@@ -74,9 +74,9 @@
         const voices=window.speechSynthesis.getVoices();
         const friendlyNames=/\b(Samantha|Ava|Sonia|Jenny|Libby|Zira|Aria|Female)\b/i;
         message.voice=voices.find(voice=>voice.lang?.startsWith('en')&&friendlyNames.test(voice.name))||voices.find(voice=>voice.lang?.startsWith('en'))||null;
-        // Restore Buzz's original warm, friendly voice. The exact voice still
-        // depends on what the phone or computer provides.
-        message.lang=message.voice?.lang||'en-US';message.rate=.88;message.pitch=1.2;
+        // Keep Buzz warm and friendly, with softer volume, gentler pitch, and
+        // a relaxed pace. The exact voice depends on the device.
+        message.lang=message.voice?.lang||'en-US';message.rate=.82;message.pitch=1.04;message.volume=.82;
         message.onend=()=>{if(this.utterance===message)this.utterance=undefined;};
         message.onerror=event=>{
           if(this.utterance!==message)return;
